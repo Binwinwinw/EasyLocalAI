@@ -1,0 +1,36 @@
+version: "3.8"
+
+services:
+  ollama:
+    image: ollama/ollama
+    container_name: ollama_prod
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+
+  php_app:
+    build: ./php
+    # Exposé via reverse proxy (Nginx/Apache) en prod, pas de 8000
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+    networks:
+      - web
+
+  # Exemple de reverse proxy (tu peux l’ajouter ailleurs plus tard)
+  # nginx:
+  #   image: nginx:alpine
+  #   ports:
+  #     - "80:80"
+  #   volumes:
+  #     - ./nginx.conf:/etc/nginx/nginx.conf
+  #   networks:
+  #     - web
+  #   depends_on:
+  #     - php_app
+
+networks:
+  web:
+volumes:
+  ollama_data:
