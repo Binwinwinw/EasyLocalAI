@@ -22,6 +22,13 @@ EasyLocalAI : un module IA local, embarqué dans votre application web, sans fra
    ```
 4. **Accès** : L'interface est disponible sur [http://localhost:8002](http://localhost:8002).
 
+### ☁️ Lancement en un clic (Codespaces)
+
+Si vous ne pouvez pas installer Docker localement, vous pouvez lancer **EasyLocalAI** directement dans votre navigateur :
+1. Cliquez sur le bouton **"Code"** en haut de ce dépôt.
+2. Allez dans l'onglet **"Codespaces"** et cliquez sur **"Create codespace on main"**.
+3. Attendez que l'environnement se construise. L'interface s'ouvrira automatiquement une fois prête.
+
 ## 🌍 Déploiement en Production
 
 Pour un serveur de production (VPS), utilisez le fichier de configuration dédié :
