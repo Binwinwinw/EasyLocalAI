@@ -3,10 +3,26 @@
 session_start();
 require_once __DIR__ . '/rag.php';
 
-// Configuration du prompt système (IA pédagogique en français)
-$system_prompt = "Tu es un assistant pédagogique francophone, très clair, concis et structuré. "
-    . "Tu réponds toujours en français, en évitant le chinois et les formulations confuses. "
-    . "Tu peux expliquer simplement des concepts pour un public scolaire ou professionnel.";
+// Augmenter le temps d'exécution pour l'IA
+set_time_limit(120);
+ini_set('memory_limit', '256M');
+
+// Charger la configuration depuis le fichier JSON
+$config_path = __DIR__ . '/config/settings.json';
+$settings = [
+    "app_name" => "EasyLocalAI",
+    "model_name" => "llama3.2",
+    "api_base_url" => "http://ollama:11434/v1/chat/completions",
+    "system_prompt" => "Tu es un assistant pédagogique francophone."
+];
+
+if (file_exists($config_path)) {
+    $json = file_get_contents($config_path);
+    $settings = array_merge($settings, json_decode($json, true) ?: []);
+}
+
+$system_prompt = $settings['system_prompt'];
+$app_name = $settings['app_name'];
 
 // Initialisation de l'historique si besoin
 if (!isset($_SESSION['conversation_history'])) {
@@ -15,7 +31,7 @@ if (!isset($_SESSION['conversation_history'])) {
 
 // Fonction pour appeler LocalAI (OpenAI compatible)
 function askLocalAI($prompt, $history = []) {
-    global $system_prompt;
+    global $system_prompt, $settings;
     // Ajout RAG : cherche un contexte si la question mentionne un domaine scolaire
     $rag_context = get_rag_context($prompt);
     $curl = curl_init();
@@ -38,15 +54,17 @@ function askLocalAI($prompt, $history = []) {
     $messages[] = ["role" => "user", "content" => $full_prompt];
 
     curl_setopt_array($curl, [
-        CURLOPT_URL            => "http://local-ai:8080/v1/chat/completions",
+        CURLOPT_URL            => $settings['api_base_url'],
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_POST           => true,
         CURLOPT_POSTFIELDS     => json_encode([
-            "model"  => "ollama-llama3",
+            "model"  => $settings['model_name'],
             "messages" => $messages,
             "stream" => false,
         ]),
         CURLOPT_HTTPHEADER     => ["Content-Type: application/json"],
+        CURLOPT_CONNECTTIMEOUT => 10,
+        CURLOPT_TIMEOUT        => 90, // Temps pour la génération
     ]);
 
     $response = curl_exec($curl);
@@ -70,15 +88,22 @@ function askLocalAI($prompt, $history = []) {
     return "Erreur IA (Réponse vide ou invalide). Réponse brute: " . substr($response, 0, 200);
 }
 
-// Gérer la requête GET
-$q = $_GET['q'] ?? "";
+// Gérer la requête (POST ou GET pour compatibilité)
+$q = $_POST['q'] ?? $_GET['q'] ?? "";
 
 $reply = null;
 if ($q) {
-    $reply = askLocalAI($q, $_SESSION['conversation_history']);
+    // Récupérer l'historique et fermer la session pour éviter de bloquer les autres requêtes (lock)
+    $history = $_SESSION['conversation_history'];
+    session_write_close();
+
+    $reply = askLocalAI($q, $history);
+
+    // Réouvrir la session pour enregistrer la nouvelle réponse
+    session_start();
     $_SESSION['conversation_history'][] = ['q' => $q, 'a' => $reply];
 } else {
-    $reply = "Entre une question avec ?q=Votre+question+ici";
+    $reply = "Entre une question";
 }
 ?>
 
@@ -86,7 +111,7 @@ if ($q) {
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>LocaLAI – IA locale intégrée</title>
+    <title><?= htmlspecialchars($app_name) ?> – IA locale intégrée</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -107,10 +132,10 @@ if ($q) {
     </style>
 </head>
 <body>
-    <h1>LocaLAI – Assistant IA local</h1>
+    <h1><?= htmlspecialchars($app_name) ?> – Assistant IA local</h1>
 
 
-    <form method="get" id="questionForm" autocomplete="off" novalidate>
+    <form method="post" id="questionForm" autocomplete="off" novalidate>
         <label>
             Question :
             <input type="text" name="q" id="qInput" value="<?= htmlspecialchars($q) ?>"

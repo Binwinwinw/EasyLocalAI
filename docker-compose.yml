@@ -18,21 +18,8 @@ services:
       - ollama
     environment:
       - OLLAMA_HOST=http://ollama:11434
-
-  local-ai:
-    image: localai/localai:v2.24.0
-    container_name: local-ai
-    ports:
-      - "8082:8080"
     volumes:
-      - ./models:/models
-      - ./config:/app/config
-    environment:
-      - MODELS_PATH=/models
-      - DEBUG=true
-    depends_on:
-      - ollama
-    restart: unless-stopped
+      - ./config:/var/www/html/config
 
 volumes:
   ollama_data:
