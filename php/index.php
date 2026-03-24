@@ -13,43 +13,61 @@ if (!isset($_SESSION['conversation_history'])) {
     $_SESSION['conversation_history'] = [];
 }
 
-// Fonction pour appeler Ollama
-function askOllama($prompt, $history = []) {
+// Fonction pour appeler LocalAI (OpenAI compatible)
+function askLocalAI($prompt, $history = []) {
+    global $system_prompt;
     // Ajout RAG : cherche un contexte si la question mentionne un domaine scolaire
     $rag_context = get_rag_context($prompt);
     $curl = curl_init();
 
-    // Construire un petit contexte avec l'historique
-    $context = [];
+    // Construire les messages pour l'API Chat Completions
+    $messages = [
+        ["role" => "system", "content" => $system_prompt]
+    ];
+
     foreach ($history as $item) {
-        $context[] = "Question: " . $item['q'];
-        $context[] = "Réponse: " . $item['a'];
+        $messages[] = ["role" => "user", "content" => $item['q']];
+        $messages[] = ["role" => "assistant", "content" => $item['a']];
     }
 
-    // Ajoute le contexte RAG avant la question si trouvé
-    $full_prompt = $context ? implode("\n\n", $context) . "\n\n" : '';
+    $full_prompt = $prompt;
     if ($rag_context) {
-        $full_prompt .= $rag_context . "\n\n";
+        $full_prompt = $rag_context . "\n\n" . $prompt;
     }
-    $full_prompt .= $prompt;
+
+    $messages[] = ["role" => "user", "content" => $full_prompt];
 
     curl_setopt_array($curl, [
-        CURLOPT_URL            => "http://ollama:11434/api/generate",
+        CURLOPT_URL            => "http://local-ai:8080/v1/chat/completions",
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_POST           => true,
         CURLOPT_POSTFIELDS     => json_encode([
-            "model"  => "qwen3:4b",
-            "prompt" => $system_prompt . "\n\n" . $full_prompt,
+            "model"  => "ollama-llama3",
+            "messages" => $messages,
             "stream" => false,
         ]),
         CURLOPT_HTTPHEADER     => ["Content-Type: application/json"],
     ]);
 
     $response = curl_exec($curl);
+    $error = curl_error($curl);
     curl_close($curl);
 
+    if ($error) {
+        return "Erreur Curl: " . $error;
+    }
+
     $data = json_decode($response, true);
-    return $data['response'] ?? "Erreur IA ou pas de réponse.";
+    if (isset($data['choices'][0]['message']['content'])) {
+        return $data['choices'][0]['message']['content'];
+    }
+
+    // Si on arrive ici, il y a une erreur ou un format inattendu
+    if (isset($data['error'])) {
+        return "Erreur API: " . ($data['error']['message'] ?? json_encode($data['error']));
+    }
+    
+    return "Erreur IA (Réponse vide ou invalide). Réponse brute: " . substr($response, 0, 200);
 }
 
 // Gérer la requête GET
@@ -57,7 +75,7 @@ $q = $_GET['q'] ?? "";
 
 $reply = null;
 if ($q) {
-    $reply = askOllama($q, $_SESSION['conversation_history']);
+    $reply = askLocalAI($q, $_SESSION['conversation_history']);
     $_SESSION['conversation_history'][] = ['q' => $q, 'a' => $reply];
 } else {
     $reply = "Entre une question avec ?q=Votre+question+ici";
