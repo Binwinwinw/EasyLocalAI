@@ -1,6 +1,6 @@
 # EasyLocalAI 🚀
 
-Une solution d'IA locale autonome, légère et facile à déployer, utilisant Docker, Ollama et PHP.
+EasyLocalAI : un module IA local, embarqué dans votre application web, sans frais d’API cloud. Fait pour n’importe quel site, fonctionne avec Docker + Ollama et un modèle léger (Llama 3.2, Qwen, Mistral, etc.)
 
 ## 🌟 Points Forts
 - **100% Privé** : Tout tourne sur votre machine, aucune donnée ne sort.
