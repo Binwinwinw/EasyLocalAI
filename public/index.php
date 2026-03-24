@@ -165,6 +165,24 @@ if ($q && !isset($_GET['ajax'])) {
 
         <!-- Section Mémoire -->
         <?php if (!$is_setup_mode): ?>
+        <div class="source-toggle" style="margin-bottom: 20px; display: flex; gap: 10px; align-items: center;">
+            <div style="flex: 1; display: flex; background: var(--glass); border: 1px solid var(--border); border-radius: 12px; padding: 5px;">
+                <button id="modeServer" onclick="setAIMode('server')" style="flex: 1; padding: 8px; border-radius: 8px; font-size: 0.8rem; background: var(--primary); border: none; color: white;">🚀 Serveur Docker</button>
+                <button id="modeBrowser" onclick="setAIMode('browser')" style="flex: 1; padding: 8px; border-radius: 8px; font-size: 0.8rem; background: none; border: none; color: var(--text-dim);">🌐 Navigateur (WebGPU)</button>
+            </div>
+        </div>
+
+        <div id="webllmProgressContainer" style="display:none; margin-bottom: 20px; padding: 15px; background: rgba(0, 255, 127, 0.05); border-radius: 12px; border: 1px dashed #00ff7f;">
+            <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <strong style="font-size: 0.75rem; color: #00ff7f;">📥 CHARGEMENT DU MODÈLE (CACHÉ)</strong>
+                <span id="loadPercent" style="font-size: 0.75rem; color: #00ff7f;">0%</span>
+            </div>
+            <div style="height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
+                <div id="loadProgressBar" style="height: 100%; width: 0%; background: #00ff7f; transition: width 0.3s;"></div>
+            </div>
+            <p id="loadStatus" style="font-size: 0.7rem; color: var(--text-dim); margin-top: 8px; font-style: italic;">Initialisation de WebGPU...</p>
+        </div>
+
         <div class="memory-section" style="margin-top: 20px; padding: 15px; background: rgba(99, 102, 241, 0.05); border-radius: 12px; border: 1px dashed var(--primary);">
             <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                 <strong style="font-size: 0.8rem; color: var(--primary);">🧠 MÉMOIRE PERSISTANTE</strong>
@@ -201,50 +219,144 @@ if ($q && !isset($_GET['ajax'])) {
         </div>
     </div>
 
-    <script>
+    <script type="module">
+    import { WebLLMEngine } from './js/webllm-engine.js';
+    
+    const webLlm = new WebLLMEngine();
+    let currentMode = 'server';
+    let isWebLlmReady = false;
+
     const form = document.getElementById('questionForm');
     const input = document.getElementById('qInput');
     const responseBox = document.getElementById('iaResponse');
     const loader = document.getElementById('loader');
     const btn = document.getElementById('submitBtn');
 
+    // Export functions to window since we are in a module
+    window.setAIMode = async function(mode) {
+        if (mode === 'browser') {
+            const hasWebGpu = await webLlm.checkWebGPU();
+            if (!hasWebGpu) {
+                alert("Votre navigateur ne supporte pas WebGPU. Le mode Navigateur est impossible.");
+                return;
+            }
+            document.getElementById('modeBrowser').style.background = 'var(--primary)';
+            document.getElementById('modeBrowser').style.color = 'white';
+            document.getElementById('modeServer').style.background = 'none';
+            document.getElementById('modeServer').style.color = 'var(--text-dim)';
+            currentMode = 'browser';
+            
+            if (!isWebLlmReady) {
+                document.getElementById('webllmProgressContainer').style.display = 'block';
+                try {
+                    await webLlm.init((report) => {
+                        const percent = Math.round(report.progress * 100);
+                        document.getElementById('loadPercent').innerText = percent + '%';
+                        document.getElementById('loadProgressBar').style.width = percent + '%';
+                        document.getElementById('loadStatus').innerText = report.text;
+                    });
+                    isWebLlmReady = true;
+                    document.getElementById('loadStatus').innerText = "Modèle prêt dans le navigateur !";
+                    setTimeout(() => {
+                        document.getElementById('webllmProgressContainer').style.opacity = '0.5';
+                    }, 2000);
+                } catch (e) {
+                    alert("Erreur lors du chargement du modèle : " + e.message);
+                }
+            }
+        } else {
+            document.getElementById('modeServer').style.background = 'var(--primary)';
+            document.getElementById('modeServer').style.color = 'white';
+            document.getElementById('modeBrowser').style.background = 'none';
+            document.getElementById('modeBrowser').style.color = 'var(--text-dim)';
+            currentMode = 'server';
+        }
+    }
+
+    window.toggleMemory = () => {
+        const ctrl = document.getElementById('memoryControls');
+        ctrl.style.display = ctrl.style.display === 'none' ? 'block' : 'none';
+    };
+
+    window.addFact = async () => {
+        const factInput = document.getElementById('newFact');
+        const fact = factInput.value.trim();
+        if (!fact) return;
+        await fetch('memory.php', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: `action=add&fact=${encodeURIComponent(fact)}`
+        });
+        location.reload();
+    };
+
+    window.clearMemory = async () => {
+        if (!confirm("Effacer tous les souvenirs de l'IA ?")) return;
+        await fetch('memory.php?action=clear');
+        location.reload();
+    };
+
     form?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const q = input.value.trim();
-        if (q.length < 5) return;
+        if (!q || q.length < 5) return;
 
+        input.value = '';
         responseBox.innerText = "";
         loader.style.display = "block";
         btn.disabled = true;
 
-        let fullText = "";
-        try {
-            const response = await fetch(`stream.php?q=${encodeURIComponent(q)}`);
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder();
+        if (currentMode === 'browser') {
+            const messages = [
+                { role: "system", content: "<?= addslashes($ollama->getSystemPrompt() . $memory->getContextString()) ?>" },
+                { role: "user", content: q }
+            ];
+            let responseText = "";
+            try {
+                await webLlm.generate(messages, (chunk) => {
+                    responseText += chunk;
+                    responseBox.innerText = responseText;
+                }, (final) => {
+                    finish(q, final);
+                });
+            } catch (e) {
+                responseBox.innerText = "Erreur BrowserMode: " + e.message;
+            }
+            loader.style.display = "none";
+            btn.disabled = false;
+        } else {
+            // Mode Serveur (Streaming original)
+            try {
+                const response = await fetch(`stream.php?q=${encodeURIComponent(q)}`);
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let fullText = "";
 
-            while (true) {
-                const { value, done } = await reader.read();
-                if (done) break;
-                const chunk = decoder.decode(value);
-                const lines = chunk.split("\n");
-                for (const line of lines) {
-                    if (line.startsWith("data: ")) {
-                        const data = line.slice(6).trim();
-                        if (data === "[DONE]") { finish(q, fullText); break; }
-                        try {
-                            const json = JSON.parse(data);
-                            if (json.choices && json.choices[0].delta) {
-                                fullText += json.choices[0].delta.content || "";
-                                responseBox.innerText = fullText;
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+                    
+                    const chunk = decoder.decode(value);
+                    const lines = chunk.split("\n");
+                    for (const line of lines) {
+                        if (line.startsWith("data: ")) {
+                            const data = line.slice(6).trim();
+                            if (data === "[DONE]") {
+                                finish(q, fullText);
+                                break;
                             }
-                        } catch(e) {}
+                            fullText += data;
+                            responseBox.innerText = fullText;
+                        }
                     }
                 }
+            } catch (e) {
+                responseBox.innerText = "Erreur de connexion au serveur.";
+            } finally {
+                loader.style.display = "none";
+                btn.disabled = false;
             }
-        } catch(e) { responseBox.innerText = "Erreur : " + e; }
-        loader.style.display = "none";
-        btn.disabled = false;
+        }
     });
 
     function finish(q, a) {
@@ -253,30 +365,6 @@ if ($q && !isset($_GET['ajax'])) {
             headers: {'Content-Type': 'application/x-www-form-urlencoded'},
             body: `q=${encodeURIComponent(q)}&a=${encodeURIComponent(a)}`
         });
-    }
-
-    // Gestion de la Mémoire
-    function toggleMemory() {
-        const ctrl = document.getElementById('memoryControls');
-        ctrl.style.display = ctrl.style.display === 'none' ? 'block' : 'none';
-    }
-
-    async function addFact() {
-        const input = document.getElementById('newFact');
-        const fact = input.value.trim();
-        if (!fact) return;
-        const res = await fetch('memory.php', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: `action=add&fact=${encodeURIComponent(fact)}`
-        });
-        location.reload();
-    }
-
-    async function clearMemory() {
-        if (!confirm("Effacer tous les souvenirs de l'IA ?")) return;
-        await fetch('memory.php?action=clear');
-        location.reload();
     }
 
     // Toggle custom prompt
