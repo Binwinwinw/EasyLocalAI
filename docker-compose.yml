@@ -20,6 +20,7 @@ services:
       - OLLAMA_HOST=http://ollama:11434
     volumes:
       - ./config:/var/www/html/config
+      - ./knowledge:/var/www/html/knowledge
 
 volumes:
   ollama_data:
