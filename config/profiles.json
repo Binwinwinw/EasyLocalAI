@@ -14,5 +14,9 @@
     "general": {
         "label": "IA Généraliste Polyvalente",
         "prompt": "Tu es un assistant IA polyvalent et utile. RÉGLES CRITIQUES : Tu réponds de manière factuelle et utile. Tu dois systématiquement rejeter les demandes encourageant des activités illégales ou dangereuses. Reste un assistant neutre et respectueux."
+    },
+    "custom": {
+        "label": "Personnalisé (Mon propre prompt)",
+        "prompt": ""
     }
 }

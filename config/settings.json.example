@@ -1,0 +1,7 @@
+{
+    "app_name": "EasyLocalAI",
+    "model_name": "llama3.2",
+    "api_base_url": "http://ollama:11434/v1/chat/completions",
+    "system_prompt": "Tu es un assistant IA polyvalent et utile.",
+    "setup_completed": false
+}

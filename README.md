@@ -31,11 +31,11 @@ docker compose -f docker-compose.prod.yml up -d
 *Note : Pensez à configurer un reverse-proxy (Nginx/Traefik) pour la gestion SSL.*
 
 ## 📂 Structure du Projet (Modulaire)
-- `public/` : Point d'entrée Web (DocumentRoot).
-- `src/` : Coeur logique du projet (Namespace `EasyLocalAI`).
-- `config/` : Paramètres de l'IA et autoloader.
-- `knowledge/` : Dossier pour vos documents `.txt` (RAG).
-- `models/` : Données des modèles Ollama (volume local).
+- **`public/`** : Point d'entrée web (Interface, Streaming SSE).
+- **`src/`** : Logique métier (Config, Ollama, RAG, Session).
+- **`config/`** : Paramètres JSON (`settings`, `profiles`) et Autoloader.
+- **`knowledge/`** : Documents locaux pour le RAG.
+- **`ollama_data/`** : Volume pour la persistance des modèles.
 
 ## ⚖️ Licence
 Distribué sous licence MIT. Voir le fichier `LICENSE` pour plus d'informations.

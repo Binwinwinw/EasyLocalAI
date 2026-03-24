@@ -11,7 +11,7 @@ services:
     restart: unless-stopped
 
   php_app:
-    build: ./php
+    build: .
     ports:
       - "8002:80"
     depends_on:
@@ -19,6 +19,7 @@ services:
     environment:
       - OLLAMA_HOST=http://ollama:11434
     volumes:
+      - .:/var/www/html
       - ./config:/var/www/html/config
       - ./knowledge:/var/www/html/knowledge
 
