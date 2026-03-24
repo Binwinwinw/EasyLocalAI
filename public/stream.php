@@ -8,6 +8,7 @@ use EasyLocalAI\Core\Config;
 use EasyLocalAI\Core\Ollama;
 use EasyLocalAI\App\Conversation;
 use EasyLocalAI\RAG\RAG;
+use EasyLocalAI\App\Memory;
 
 header('Content-Type: text/event-stream');
 header('Cache-Control: no-cache');
@@ -21,7 +22,8 @@ if (!$q || mb_strlen($q) < 5) {
 
 $config = new Config();
 $rag = new RAG();
-$ollama = new Ollama($config);
+$memory = new Memory();
+$ollama = new Ollama($config, $memory->getContextString());
 
 $history = Conversation::getHistory();
 $rag_context = $rag->getContext($q);

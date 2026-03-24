@@ -9,6 +9,7 @@ use EasyLocalAI\Core\Ollama;
 use EasyLocalAI\App\Conversation;
 use EasyLocalAI\Setup\SetupManager;
 use EasyLocalAI\RAG\RAG;
+use EasyLocalAI\App\Memory;
 
 // Performance settings
 set_time_limit(120);
@@ -18,7 +19,8 @@ ini_set('memory_limit', '256M');
 $config = new Config();
 $setup  = new SetupManager($config);
 $rag    = new RAG();
-$ollama = new Ollama($config);
+$memory = new Memory();
+$ollama = new Ollama($config, $memory->getContextString());
 
 // Setup Mode Check
 $is_setup_mode = $setup->isSetupRequired();
@@ -120,6 +122,19 @@ if ($q && !isset($_GET['ajax'])) {
                     <button type="submit" style="width: 100%;">Enregistrer et Commencer</button>
                     <a href="index.php" style="text-align: center; color: var(--text-dim); text-decoration: none; font-size: 0.85rem;">Passer la configuration</a>
                 </form>
+
+                <hr style="border: 0; border-top: 1px solid var(--border); margin: 30px 0;">
+                
+                <form method="post" style="display: flex; flex-direction: column; gap: 15px;">
+                    <input type="hidden" name="action" value="skill_add">
+                    <strong style="font-size: 0.8rem; color: var(--primary); letter-spacing: 1px;">➕ CRÉER UNE NOUVELLE COMPÉTENCE</strong>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <input type="text" name="skill_name" placeholder="ID (ex: chef)" required maxlength="20">
+                        <input type="text" name="skill_label" placeholder="Nom Affiché (ex: Chef Cuistot)" required maxlength="50">
+                    </div>
+                    <textarea name="skill_prompt" placeholder="Définissez sa personnalité et ses règles..." style="width: 100%; min-height: 80px; background: var(--glass); border: 1px solid var(--border); border-radius: 12px; padding: 10px; color: white;" required></textarea>
+                    <button type="submit" style="background: var(--glass); border: 1px solid var(--primary); color: var(--primary);">Ajouter cette compétence</button>
+                </form>
             </section>
         <?php else: ?>
             <h1><?= htmlspecialchars($app_name) ?></h1>
@@ -145,6 +160,32 @@ if ($q && !isset($_GET['ajax'])) {
             </form>
             <form method="post"><input type="hidden" name="action" value="clear"><button type="submit" class="btn-clear" onclick="return confirm('Vraiment tout effacer ?')">Vider l'histoire</button></form>
             <a href="?setup=1" style="font-size: 0.75rem; color: var(--text-dim); text-decoration: none; margin-top: 10px;">⚙️ Reconfigurer</a>
+        </div>
+        <?php endif; ?>
+
+        <!-- Section Mémoire -->
+        <?php if (!$is_setup_mode): ?>
+        <div class="memory-section" style="margin-top: 20px; padding: 15px; background: rgba(99, 102, 241, 0.05); border-radius: 12px; border: 1px dashed var(--primary);">
+            <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <strong style="font-size: 0.8rem; color: var(--primary);">🧠 MÉMOIRE PERSISTANTE</strong>
+                <button onclick="toggleMemory()" style="background:none; border:none; color:var(--text-dim); font-size:1.2rem; cursor:pointer;">⚙️</button>
+            </div>
+            <div id="memoryList" style="font-size: 0.85rem; color: var(--text-dim); line-height: 1.4;">
+                <?php if (empty($memory->getFacts())): ?>
+                    <p style="font-style: italic; margin: 0;">L'IA n'a pas encore de souvenirs persistants.</p>
+                <?php else: ?>
+                    <ul style="margin: 0; padding-left: 15px;">
+                        <?php foreach ($memory->getFacts() as $idx => $fact): ?>
+                            <li><?= htmlspecialchars($fact) ?></li>
+                        <?php endforeach; ?>
+                    </ul>
+                <?php endif; ?>
+            </div>
+            <div id="memoryControls" style="display:none; margin-top:10px;">
+                <input type="text" id="newFact" placeholder="Ajouter un fait important..." style="width:70%; margin-right:5px; font-size:0.8rem;">
+                <button onclick="addFact()" style="padding:5px 10px; font-size:0.8rem;">Ajouter</button>
+                <button onclick="clearMemory()" class="btn-clear" style="margin-top:5px; width:100%;">Réinitialiser la mémoire</button>
+            </div>
         </div>
         <?php endif; ?>
 
@@ -212,6 +253,30 @@ if ($q && !isset($_GET['ajax'])) {
             headers: {'Content-Type': 'application/x-www-form-urlencoded'},
             body: `q=${encodeURIComponent(q)}&a=${encodeURIComponent(a)}`
         });
+    }
+
+    // Gestion de la Mémoire
+    function toggleMemory() {
+        const ctrl = document.getElementById('memoryControls');
+        ctrl.style.display = ctrl.style.display === 'none' ? 'block' : 'none';
+    }
+
+    async function addFact() {
+        const input = document.getElementById('newFact');
+        const fact = input.value.trim();
+        if (!fact) return;
+        const res = await fetch('memory.php', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: `action=add&fact=${encodeURIComponent(fact)}`
+        });
+        location.reload();
+    }
+
+    async function clearMemory() {
+        if (!confirm("Effacer tous les souvenirs de l'IA ?")) return;
+        await fetch('memory.php?action=clear');
+        location.reload();
     }
 
     // Toggle custom prompt

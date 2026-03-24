@@ -8,8 +8,9 @@ class Ollama
     private string $baseUrl;
     private string $model;
     private string $systemPrompt;
+    private string $memoryContext = "";
 
-    public function __construct(Config $config)
+    public function __construct(Config $config, string $memoryContext = "")
     {
         $url = rtrim($config->get('api_base_url'), '/');
         // Si l'URL contient déjà 'chat/completions', on ne l'ajoute pas
@@ -20,6 +21,7 @@ class Ollama
         }
         $this->model   = $config->get('model_name', 'llama3.2');
         $this->systemPrompt = $config->getSystemPrompt();
+        $this->memoryContext = $memoryContext;
     }
 
     /**
@@ -93,7 +95,7 @@ class Ollama
     private function prepareMessages(string $prompt, array $history): array
     {
         $messages = [
-            ["role" => "system", "content" => $this->systemPrompt]
+            ["role" => "system", "content" => $this->systemPrompt . $this->memoryContext]
         ];
 
         foreach ($history as $item) {

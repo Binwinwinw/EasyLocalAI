@@ -29,6 +29,14 @@ class SetupManager
         return isset($_GET['setup']) || !($this->config->get('setup_completed', false));
     }
 
+    public function addProfile(string $key, array $data): bool
+    {
+        $path = __DIR__ . '/../../config/profiles.json';
+        $this->profiles[$key] = $data;
+        $json = json_encode($this->profiles, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        return file_put_contents($path, $json) !== false;
+    }
+
     public function handleForm(): bool
     {
         if (isset($_POST['action']) && $_POST['action'] === "setup_save") {
@@ -45,6 +53,17 @@ class SetupManager
             $this->config->set('system_prompt', $new_prompt);
             $this->config->set('setup_completed', true);
             return $this->config->save();
+        }
+
+        if (isset($_POST['action']) && $_POST['action'] === "skill_add") {
+            $key = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $_POST['skill_name']));
+            if ($key && !isset($this->profiles[$key])) {
+                $this->addProfile($key, [
+                    'label' => $_POST['skill_label'] ?: $_POST['skill_name'],
+                    'prompt' => $_POST['skill_prompt']
+                ]);
+                return true;
+            }
         }
         return false;
     }
