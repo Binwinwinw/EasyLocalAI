@@ -22,12 +22,14 @@ $rag    = new RAG();
 $memory = new Memory();
 $ollama = new Ollama($config, $memory->getContextString());
 
-// Setup Mode Check
-$is_setup_mode = $setup->isSetupRequired();
+// Navigation Logic
+$is_chat_mode = isset($_GET['chat']);
+$is_setup_mode = !$is_chat_mode;
 
 // Handle Setup Submission
 if ($setup->handleForm()) {
-    header("Location: index.php");
+    // If we just saved the setup, go to the chat
+    header("Location: index.php?chat=1");
     exit;
 }
 
@@ -38,7 +40,7 @@ $upload_msg = $rag->handleUpload();
 // Handle Clear History
 if (isset($_POST['action']) && $_POST['action'] === "clear") {
     Conversation::clearHistory();
-    header("Location: index.php");
+    header("Location: index.php?chat=1");
     exit;
 }
 
@@ -120,7 +122,7 @@ if ($q && !isset($_GET['ajax'])) {
                     </div>
 
                     <button type="submit" style="width: 100%;">Enregistrer et Commencer</button>
-                    <a href="index.php" style="text-align: center; color: var(--text-dim); text-decoration: none; font-size: 0.85rem;">Passer la configuration</a>
+                    <a href="index.php?chat=1" style="text-align: center; color: var(--text-dim); text-decoration: none; font-size: 0.85rem;">Passer la configuration et accéder au Chat</a>
                 </form>
 
                 <hr style="border: 0; border-top: 1px solid var(--border); margin: 30px 0;">
@@ -159,7 +161,7 @@ if ($q && !isset($_GET['ajax'])) {
                 <?php if (!empty($upload_msg)): ?><span style="font-size: 0.75rem; color: #10b981; margin-left:10px;"><?= $upload_msg ?></span><?php endif; ?>
             </form>
             <form method="post"><input type="hidden" name="action" value="clear"><button type="submit" class="btn-clear" onclick="return confirm('Vraiment tout effacer ?')">Vider l'histoire</button></form>
-            <a href="?setup=1" style="font-size: 0.75rem; color: var(--text-dim); text-decoration: none; margin-top: 10px;">⚙️ Reconfigurer</a>
+            <a href="index.php" style="font-size: 0.75rem; color: var(--text-dim); text-decoration: none; margin-top: 10px;">⚙️ Changer de Profil / Configurer</a>
         </div>
         <?php endif; ?>
 
