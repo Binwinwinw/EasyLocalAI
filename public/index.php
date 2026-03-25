@@ -108,17 +108,18 @@ if ($q && !isset($_GET['ajax'])) {
                     </div>
 
                     <div style="display: flex; flex-direction: column; gap: 8px;">
-                        <label style="font-size: 0.8rem; color: var(--primary); font-weight: 600;">EXPERTISE & PERSONNALITÉ</label>
+                        <p style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 5px;">Choisissez un profil pré-configuré ou créez le vôtre.</p>
                         <select name="profile_choice" id="profileChoice">
                             <?php foreach ($setup->getProfiles() as $key => $p): ?>
                                 <option value="<?= $key ?>" <?= $key === 'general' ? 'selected' : '' ?>><?= htmlspecialchars($p['label']) ?></option>
                             <?php endforeach; ?>
                         </select>
-                        <div id="customPromptContainer" style="display: none; flex-direction: column; gap: 8px; margin-top: 10px;">
-                            <label style="font-size: 0.75rem; color: var(--primary); font-weight: 600;">VOTRE PROMPT SYSTÈME</label>
-                            <textarea name="custom_prompt" style="width: 100%; min-width: 100%; background: var(--glass); border: 1px solid var(--border); border-radius: 12px; padding: 12px; color: white; font-family: inherit; font-size: 0.9rem; min-height: 100px; resize: vertical;" placeholder="Ex: Tu es un expert en cuisine italienne..."></textarea>
+                        <div id="customPromptContainer" style="display: none; flex-direction: column; gap: 8px; margin-top: 15px; padding: 15px; background: rgba(99, 102, 241, 0.1); border-radius: 12px; border: 1px solid var(--primary);">
+                            <label style="font-size: 0.75rem; color: var(--primary); font-weight: 600;">🛠️ PERSONNALISER LE PROFIL</label>
+                            <p style="font-size: 0.7rem; color: var(--text-dim); margin: 0;"><strong>Astuce :</strong> Commencez par "Tu es un expert en [Domaine]..." pour de meilleurs résultats.</p>
+                            <textarea name="custom_prompt" style="width: 100%; min-width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 12px; color: white; font-family: inherit; font-size: 0.9rem; min-height: 120px; resize: vertical;" placeholder="Ex: Tu es un expert en développement PHP. Ta mission est d'aider l'utilisateur à structurer son code en suivant les normes PSR-12..."></textarea>
                         </div>
-                        <p style="font-size: 0.75rem; color: var(--text-dim);">Chaque profil inclut des règles de sécurité pour un usage responsable.</p>
+                        <p style="font-size: 0.75rem; color: var(--text-dim);">Chaque profil définit le comportement et les limites de votre assistant.</p>
                     </div>
 
                     <button type="submit" style="width: 100%;">Enregistrer et Commencer</button>
@@ -134,7 +135,8 @@ if ($q && !isset($_GET['ajax'])) {
                         <input type="text" name="skill_name" placeholder="ID (ex: chef)" required maxlength="20">
                         <input type="text" name="skill_label" placeholder="Nom Affiché (ex: Chef Cuistot)" required maxlength="50">
                     </div>
-                    <textarea name="skill_prompt" placeholder="Définissez sa personnalité et ses règles..." style="width: 100%; min-height: 80px; background: var(--glass); border: 1px solid var(--border); border-radius: 12px; padding: 10px; color: white;" required></textarea>
+                    <p style="font-size: 0.7rem; color: var(--text-dim); margin-top: -10px;"><strong>Astuce :</strong> Utilisez un format expert, ex: "Tu es un expert en..."</p>
+                    <textarea name="skill_prompt" placeholder="Définissez sa personnalité et ses règles... (Ex: Tu es un expert en analyse de données...)" style="width: 100%; min-height: 80px; background: var(--glass); border: 1px solid var(--border); border-radius: 12px; padding: 10px; color: white;" required></textarea>
                     <button type="submit" style="background: var(--glass); border: 1px solid var(--primary); color: var(--primary);">Ajouter cette compétence</button>
                 </form>
             </section>
