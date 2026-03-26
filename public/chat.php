@@ -1,18 +1,15 @@
 <?php
-// public/chat.php
+// public/chat.php - DI Refactor
 session_start();
 require_once __DIR__ . '/../config/bootstrap.php';
 
-use EasyLocalAI\Core\Config;
-use EasyLocalAI\Core\Ollama;
+use EasyLocalAI\Core\Container;
 use EasyLocalAI\App\Conversation;
-use EasyLocalAI\RAG\RAG;
-use EasyLocalAI\App\Memory;
 
-$config = new Config();
-$rag    = new RAG();
-$memory = new Memory();
-$ollama = new Ollama($config, $memory->getContextString());
+$config = Container::get('config');
+$rag    = Container::get('rag');
+$memory = Container::get('memory');
+$ollama = Container::get('ollama');
 
 $app_name = $config->getAppName();
 $upload_msg = $rag->handleUpload();

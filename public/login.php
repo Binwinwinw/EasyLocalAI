@@ -1,16 +1,18 @@
 <?php
-// public/login.php
+// public/login.php - DI Refactor
 session_start();
 require_once __DIR__ . '/../config/bootstrap.php';
 
-use EasyLocalAI\Core\Config;
-use EasyLocalAI\Core\Auth;
+use EasyLocalAI\Core\Container;
 
-$config = new Config();
-$auth = new Auth($config);
+$auth = Container::get('auth');
 
 $error = null;
 if (isset($_POST['password'])) {
+    if (!isset($_POST['csrf_token']) || !EasyLocalAI\Core\Security::checkCsrf($_POST['csrf_token'])) {
+        die("Erreur de sécurité (CSRF)");
+    }
+    
     if ($auth->login($_POST['password'])) {
         header("Location: index.php");
         exit;
@@ -18,8 +20,6 @@ if (isset($_POST['password'])) {
         $error = "Mot de passe incorrect.";
     }
 }
-
-// Minimal header to avoid redirect loop from Auth::protect() if used later
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -50,6 +50,7 @@ if (isset($_POST['password'])) {
         <?php endif; ?>
 
         <form method="post">
+            <input type="hidden" name="csrf_token" value="<?= EasyLocalAI\Core\Security::getCsrfToken() ?>">
             <input type="password" name="password" placeholder="Mot de passe" required autofocus>
             <button type="submit">Se connecter</button>
         </form>

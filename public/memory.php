@@ -1,31 +1,20 @@
 <?php
-// public/memory.php
-
+// public/memory.php - DI Refactor
 session_start();
 require_once __DIR__ . '/../config/bootstrap.php';
 
-use EasyLocalAI\App\Memory;
+use EasyLocalAI\Core\Container;
 
-$memory = new Memory();
-$action = $_POST['action'] ?? $_GET['action'] ?? '';
+$memory = Container::get('memory');
 
-if ($action === 'add' && isset($_POST['fact'])) {
+$action = $_REQUEST['action'] ?? "";
+
+if ($action === "add" && isset($_POST['fact'])) {
     $memory->addFact($_POST['fact']);
-    echo json_encode(['status' => 'success', 'facts' => $memory->getFacts()]);
-    exit;
+    echo json_encode(["status" => "ok"]);
 }
 
-if ($action === 'remove' && isset($_POST['index'])) {
-    $memory->removeFact((int)$_POST['index']);
-    echo json_encode(['status' => 'success', 'facts' => $memory->getFacts()]);
-    exit;
-}
-
-if ($action === 'clear') {
+if ($action === "clear") {
     $memory->clear();
-    echo json_encode(['status' => 'success', 'facts' => []]);
-    exit;
+    echo json_encode(["status" => "ok"]);
 }
-
-// Default: return facts
-echo json_encode($memory->getFacts());

@@ -1,16 +1,15 @@
 <?php
-// public/skills.php
+// public/skills.php - DI Refactor
 session_start();
 require_once __DIR__ . '/../config/bootstrap.php';
 
-use EasyLocalAI\Core\Config;
-use EasyLocalAI\Setup\SetupManager;
+use EasyLocalAI\Core\Container;
 
-$config = new Config();
-$setup  = new SetupManager($config);
+$setup  = Container::get('setup');
+$config = Container::get('config');
 
 if ($setup->handleForm()) {
-    header("Location: setup.php"); // Return to setup to see new profiles
+    header("Location: setup.php");
     exit;
 }
 
@@ -26,6 +25,7 @@ include __DIR__ . '/includes/header.php';
 <section class="response-box">
     <form method="post" style="display: flex; flex-direction: column; gap: 15px;">
         <input type="hidden" name="action" value="skill_add">
+        <input type="hidden" name="csrf_token" value="<?= EasyLocalAI\Core\Security::getCsrfToken() ?>">
         <strong style="font-size: 0.8rem; color: var(--primary); letter-spacing: 1px;">➕ CRÉER UNE NOUVELLE COMPÉTENCE</strong>
         
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">

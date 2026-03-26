@@ -1,13 +1,12 @@
 <?php
-// public/setup.php
+// public/setup.php - DI Refactor
 session_start();
 require_once __DIR__ . '/../config/bootstrap.php';
 
-use EasyLocalAI\Core\Config;
-use EasyLocalAI\Setup\SetupManager;
+use EasyLocalAI\Core\Container;
 
-$config = new Config();
-$setup  = new SetupManager($config);
+$setup  = Container::get('setup');
+$config = Container::get('config');
 
 if ($setup->handleForm()) {
     header("Location: chat.php");
@@ -26,6 +25,7 @@ include __DIR__ . '/includes/header.php';
 <section class="response-box">
     <form method="post" style="display: flex; flex-direction: column; gap: 20px;">
         <input type="hidden" name="action" value="setup_save">
+        <input type="hidden" name="csrf_token" value="<?= EasyLocalAI\Core\Security::getCsrfToken() ?>">
         
         <div style="display: flex; flex-direction: column; gap: 8px;">
             <label style="font-size: 0.8rem; color: var(--primary); font-weight: 600;">NOM DE L'ASSISTANT</label>

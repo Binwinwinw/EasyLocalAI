@@ -4,6 +4,7 @@
 namespace EasyLocalAI\Setup;
 
 use EasyLocalAI\Core\Config;
+use EasyLocalAI\Core\Security;
 
 class SetupManager
 {
@@ -39,24 +40,42 @@ class SetupManager
 
     public function handleForm(): bool
     {
-        if (isset($_POST['action']) && $_POST['action'] === "setup_save") {
-            $new_name = $_POST['app_name_input'] ?? "EasyLocalAI";
-            $profile_key = $_POST['profile_choice'] ?? "general";
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !isset($_POST['action'])) {
+            return false;
+        }
+
+        // Vérification CSRF
+        if (!isset($_POST['csrf_token']) || !Security::checkCsrf($_POST['csrf_token'])) {
+            die("Erreur de sécurité (CSRF)");
+        }
+
+        // Sauvegarde de la configuration de base
+        if ($_POST['action'] === 'setup_save') {
+            $name = Security::sanitize($_POST['app_name_input'] ?? 'EasyLocalAI');
+            $profile = Security::sanitize($_POST['profile_choice'] ?? 'general');
+            $custom = Security::sanitize($_POST['custom_prompt'] ?? '');
             
-            if ($profile_key === 'custom' && !empty($_POST['custom_prompt'])) {
-                $new_prompt = $_POST['custom_prompt'];
+            $this->config->set('app_name', $name);
+            $this->config->set('active_profile', $profile);
+            
+            if ($profile === 'custom' && !empty($custom)) {
+                // Assuming updateProfile is a new method or logic to be added elsewhere
+                // For now, we'll just set the system_prompt directly if custom
+                $this->config->set('system_prompt', $custom);
             } else {
-                $new_prompt = $this->profiles[$profile_key]['prompt'] ?? "Tu es un assistant IA.";
+                // Fallback to existing profile prompt if not custom or custom is empty
+                $this->config->set('system_prompt', $this->profiles[$profile]['prompt'] ?? "Tu es un assistant IA.");
             }
-            
-            $this->config->set('app_name', $new_name);
-            $this->config->set('system_prompt', $new_prompt);
             $this->config->set('setup_completed', true);
             return $this->config->save();
         }
 
-        if (isset($_POST['action']) && $_POST['action'] === "skill_add") {
-            $key = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $_POST['skill_name']));
+        // Ajout d'une nouvelle compétence
+        if ($_POST['action'] === 'skill_add') {
+            $key = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', Security::sanitize($_POST['skill_name'])));
+            $label = Security::sanitize($_POST['skill_label']);
+            $prompt = Security::sanitize($_POST['skill_prompt']);
+            
             if ($key && !isset($this->profiles[$key])) {
                 $this->addProfile($key, [
                     'label' => $_POST['skill_label'] ?: $_POST['skill_name'],
