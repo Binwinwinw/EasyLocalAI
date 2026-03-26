@@ -102,6 +102,39 @@ class Ollama
         curl_close($curl);
     }
 
+    /**
+     * Liste les modèles installés localement.
+     */
+    public function listModels(): array {
+        $url = str_replace('/chat/completions', '', $this->baseUrl) . '/api/tags';
+        $curl = curl_init($url);
+        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+        $response = curl_exec($curl);
+        curl_close($curl);
+        
+        $data = json_decode($response, true);
+        return $data['models'] ?? [];
+    }
+
+    /**
+     * Tente de télécharger un nouveau modèle.
+     */
+    public function pullModel(string $name): bool {
+        $url = str_replace('/chat/completions', '', $this->baseUrl) . '/api/pull';
+        $curl = curl_init($url);
+        curl_setopt_array($curl, [
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => json_encode(['name' => $name, 'stream' => false]),
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_HTTPHEADER => ["Content-Type: application/json"],
+            CURLOPT_TIMEOUT => 300 // Long timeout for download
+        ]);
+        $response = curl_exec($curl);
+        $status = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        curl_close($curl);
+        return $status === 200;
+    }
+
     private function prepareMessages(string $prompt, array $history): array
     {
         $messages = [
