@@ -1,5 +1,5 @@
 <?php
-// config/bootstrap.php
+// config/bootstrap.php - Agent & Tools Refactor
 
 spl_autoload_register(function ($class) {
     $prefix = 'EasyLocalAI\\';
@@ -25,6 +25,10 @@ use EasyLocalAI\Core\Ollama;
 use EasyLocalAI\App\Memory;
 use EasyLocalAI\RAG\RAG;
 use EasyLocalAI\Setup\SetupManager;
+use EasyLocalAI\Tools\ToolRegistry;
+use EasyLocalAI\Tools\Implementations\ClockTool;
+use EasyLocalAI\Tools\Implementations\MemoryTool;
+use EasyLocalAI\App\Agent;
 
 // Force Error Reporting in dev
 error_reporting(E_ALL);
@@ -48,12 +52,36 @@ Container::register('ollama', function() {
     return new Ollama(Container::get('config'), Container::get('memory')->getContextString());
 });
 
+Container::register('embedder', function() {
+    return new \EasyLocalAI\RAG\Embedder(Container::get('config'));
+});
+
+Container::register('vector_store', function() {
+    return new \EasyLocalAI\RAG\VectorStore();
+});
+
 Container::register('rag', function() {
-    return new RAG();
+    return new RAG(
+        Container::get('embedder'),
+        Container::get('vector_store')
+    );
 });
 
 Container::register('setup', function() {
     return new SetupManager(Container::get('config'));
+});
+
+// --- Phase 2: AI Agency ---
+
+Container::register('tool_registry', function() {
+    $registry = new ToolRegistry();
+    $registry->register(new ClockTool());
+    $registry->register(new MemoryTool(Container::get('memory')));
+    return $registry;
+});
+
+Container::register('agent', function() {
+    return new Agent(Container::get('ollama'), Container::get('tool_registry'));
 });
 
 // --- Initialisation de la Sécurité ---

@@ -24,6 +24,16 @@ class Ollama
         $this->memoryContext = $memoryContext;
     }
 
+    public function getSystemPrompt(): string
+    {
+        return $this->systemPrompt;
+    }
+
+    public function setSystemPrompt(string $prompt): void
+    {
+        $this->systemPrompt = $prompt;
+    }
+
     /**
      * Appelle l'API Ollama (compatible OpenAI)
      */

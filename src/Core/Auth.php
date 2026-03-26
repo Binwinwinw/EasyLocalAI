@@ -50,6 +50,8 @@ class Auth {
      * Protège une page.
      */
     public function protect() {
+        if (PHP_SAPI === 'cli') return; // Skip in CLI
+
         $current_page = basename($_SERVER['PHP_SELF']);
         if (!$this->isLoggedIn() && $current_page !== 'login.php' && $current_page !== 'setup.php') {
             header("Location: login.php");
