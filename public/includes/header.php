@@ -38,4 +38,5 @@
             <a href="setup.php" class="<?= basename($_SERVER['PHP_SELF']) == 'setup.php' ? 'active' : '' ?>">⚙️ Configuration</a>
             <a href="skills.php" class="<?= basename($_SERVER['PHP_SELF']) == 'skills.php' ? 'active' : '' ?>">➕ Compétences</a>
             <a href="chat.php" class="<?= basename($_SERVER['PHP_SELF']) == 'chat.php' ? 'active' : '' ?>">💬 Chat</a>
+            <a href="logout.php" style="margin-left: auto; color: #f87171;">🚪 Déconnexion</a>
         </nav>

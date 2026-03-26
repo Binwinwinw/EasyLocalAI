@@ -1,0 +1,59 @@
+<?php
+
+namespace EasyLocalAI\Core;
+
+class Auth {
+    private $config;
+    private $session_key = 'auth_user';
+
+    public function __construct(Config $config) {
+        $this->config = $config;
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+    }
+
+    /**
+     * Vérifie si l'utilisateur est connecté.
+     */
+    public function isLoggedIn() {
+        return isset($_SESSION[$this->session_key]);
+    }
+
+    /**
+     * Tente de connecter l'utilisateur.
+     */
+    public function login($password) {
+        $stored_password = $this->config->get('admin_password');
+        
+        // Par défaut, si aucun mot de passe n'est configuré, on utilise "admin"
+        if (!$stored_password) {
+            $stored_password = "admin";
+        }
+
+        if ($password === $stored_password) {
+            $_SESSION[$this->session_key] = true;
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Déconnecte l'utilisateur.
+     */
+    public function logout() {
+        unset($_SESSION[$this->session_key]);
+        session_destroy();
+    }
+
+    /**
+     * Protège une page.
+     */
+    public function protect() {
+        $current_page = basename($_SERVER['PHP_SELF']);
+        if (!$this->isLoggedIn() && $current_page !== 'login.php' && $current_page !== 'setup.php') {
+            header("Location: login.php");
+            exit;
+        }
+    }
+}

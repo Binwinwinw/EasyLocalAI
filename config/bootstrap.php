@@ -17,3 +17,14 @@ spl_autoload_register(function ($class) {
         require $file;
     }
 });
+
+use EasyLocalAI\Core\Config;
+use EasyLocalAI\Core\Auth;
+
+// Force Error Reporting in dev
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+// Initialize Security
+$auth = new Auth(new Config());
+$auth->protect();
