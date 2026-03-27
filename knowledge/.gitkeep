@@ -1,1 +1,8 @@
-# Keep this directory in Git
+# Knowledge Base (RAG) 📚
+
+Ce dossier est réservé au stockage des documents de connaissance brute (`.txt`).
+
+## Fonctionnement :
+- Les fichiers déposés ici sont indexés par le système de RAG Vectoriel.
+- Le fichier `.gitkeep` permet de conserver ce dossier dans le dépôt Git même s'il ne contient pas encore de documents.
+- **Note** : Les documents `.txt` sont ignorés par le `.gitignore` pour protéger votre vie privée.
