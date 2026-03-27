@@ -1,6 +1,7 @@
 <?php
 /**
  * EasyLocalAI - Router Central (DI Refactor)
+ * Point d'entrée après authentification.
  */
 
 session_start();
@@ -8,14 +9,9 @@ require_once __DIR__ . '/../config/bootstrap.php';
 
 use EasyLocalAI\Core\Container;
 
-$setup = Container::get('setup');
+// L'utilisateur est déjà protégé par Auth::protect() dans bootstrap.php
 
-// Si le setup est requis (premier lancement), rediriger vers la configuration
-if ($setup->isSetupRequired()) {
-    header("Location: setup.php");
-    exit;
-}
-
-// Par défaut : Vers l'interface de discussion
-header("Location: chat.php");
+// Demande de l'utilisateur : Toujours atterrir sur la page de config (setup) 
+// comme point d'entrée après le mot de passe.
+header("Location: setup.php");
 exit;

@@ -1,74 +1,31 @@
 <!-- hacklm-memory:start -->
+# EasyLocalAI - Neural Router 🧠
 
-## Memory-Augmented Context
+Vous êtes un expert en IA agissant sur le projet **EasyLocalAI**. Votre contexte est distribué. Avant toute action, identifiez le "neurone" (fichier) pertinent.
 
-Read memory files on-demand — not all at once.
+## 1. La Boucle de Pensée (Thought Loop)
+1. **Lire** : Vérifiez `.memory/security.md` et `.memory/instructions.md`.
+2. **Mapper** : Si la tâche est spécifique, lisez le prompt associé dans `.github/prompts/`.
+3. **Agir** : Utilisez vos compétences techniques définies dans `.agents/skills/`.
+4. **Mémoriser** : Après chaque décision majeure, mettez à jour `.memory/decisions.md`.
 
-| File                                               | When to read                        |
-| -------------------------------------------------- | ----------------------------------- |
-| [.memory/instructions.md](.memory/instructions.md) | How to behave                       |
-| [.memory/quirks.md](.memory/quirks.md)             | When something breaks unexpectedly  |
-| [.memory/preferences.md](.memory/preferences.md)   | Style/design/naming choices         |
-| [.memory/decisions.md](.memory/decisions.md)       | Architectural changes               |
-| [.memory/security.md](.memory/security.md)         | **ALWAYS — before any code change** |
+## 2. Cartographie du Cerveau (Context Map)
 
-### Memory Tools
+| Neurone | Usage |
+| :--- | :--- |
+| **[.memory/](.memory/)** | Mémoire long terme (Préférences, Décisions, Quirks). |
+| **[.github/prompts/](.github/prompts/)** | Instructions dynamiques pour des tâches spécifiques. |
+| **[.agents/skills/](.agents/skills/)** | Maîtrise technique et dossiers d'expertise. |
+| **[knowledge/](knowledge/)** | Base de connaissances brute pour le RAG. |
 
-Call `queryMemory` before answering anything about architecture, conventions, or style.
+## 3. Règles d'Or Impératives
+- Soyez concis (style Hemingway).
+- Pas de jargon inutile.
+- Ne dépassez JAMAIS 150 lignes pour ce fichier routeur.
+- Respectez la structure modulaire PHP (Container, PSR-4).
 
-Call `storeMemory` (with a kebab-case `slug`) when:
-
-1. User states a preference or rule → store as Instruction or Preference **before** acting
-2. User corrects you → store the correction
-3. A command or build fails → store root cause and fix
-4. After completing any implementation task → store each architectural decision, convention, or pattern applied that is not already in memory. Do this **before ending the turn**.
-
-Same slug = update, not duplicate.
-
-### Writing Style for Memory Entries
-
-Hemingway style. Short sentences. No jargon. No filler. Be blunt.
-Bad: "The system employs an asynchronous locking mechanism to serialise concurrent write operations."
-Good: "Use a lock before writing. One write at a time."
-
-### Categories
-
-| Category    | Use for                         |
-| ----------- | ------------------------------- |
-| Instruction | How to behave                   |
-| Quirk       | Project-specific weirdness      |
-| Preference  | Style/design/naming             |
-| Decision    | Architectural commitments       |
-| Security    | Rules that must NEVER be broken |
+## 4. Skills & Prompts Disponibles
+- `skills/php-expert.md` : Maîtrise de l'architecture backend.
+- `prompts/refactor.md` : Guide pour nettoyer le code legacy.
 
 <!-- hacklm-memory:end -->
-
-## Project-Specific Instructions
-
-### Build & Run
-
-- Utilise Docker Compose pour tout : `docker-compose up -d` démarre l’IA locale et le backend PHP.
-- Pour télécharger un modèle IA : `docker exec -it ollama_upstream ollama pull qwen3:4b`
-- Accès au chat IA : http://localhost:8000
-
-### Conventions
-
-- Backend en PHP, tout accès à l’IA passe par l’API locale Ollama (`http://ollama:11434/api/generate`).
-- Les services sont isolés : PHP et Ollama dans des containers séparés.
-- Les variables d’environnement sont définies dans docker-compose.yml (ex : `OLLAMA_HOST`).
-
-### Pièges & Spécificités
-
-- Ollama doit être prêt avant de lancer le backend PHP (voir `depends_on`).
-- Le port 11434 doit être libre pour Ollama, 8000 pour PHP.
-- Si le modèle n’est pas téléchargé, l’IA ne répondra pas.
-
-### Documentation
-
-- Voir le [README.md](../README.md) pour : architecture détaillée, installation, exemples d’utilisation, licence.
-- Pour le dépannage : voir [TROUBLESHOOTING.md](../TROUBLESHOOTING.md) (erreurs Ollama, Docker, PHP, solutions rapides).
-
-### À retenir
-
-- Toujours vérifier la disponibilité des containers Docker avant de tester.
-- Pour toute modification majeure, documenter la décision dans `.memory/decisions.md`.
