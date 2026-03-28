@@ -123,6 +123,7 @@ include __DIR__ . '/includes/header.php';
                     <label style="font-size: 0.7rem; color: var(--text-dim);">Source de puissance active</label>
                     <select name="active_provider" id="active_provider" onchange="updateProviderUI()" style="background: rgba(0,0,0,0.2); border-radius: 10px; padding: 8px;">
                         <option value="ollama" <?= $activeProvider === 'ollama' ? 'selected' : '' ?>>Ollama (Local - Gratuit)</option>
+                        <option value="cortex" <?= $activeProvider === 'cortex' ? 'selected' : '' ?>>Cortex Gateway (Béton Armé - Failover)</option>
                         <option value="groq" <?= $activeProvider === 'groq' ? 'selected' : '' ?>>Groq (Turbo - API)</option>
                         <option value="openai" <?= $activeProvider === 'openai' ? 'selected' : '' ?>>OpenAI (Expert - API)</option>
                         <option value="minimax" <?= $activeProvider === 'minimax' ? 'selected' : '' ?>>MiniMax (Asie - API)</option>
@@ -202,7 +203,10 @@ include __DIR__ . '/includes/header.php';
                         <?php if ($notPulled): ?>
                             <button onclick="startPull('<?= $m['name'] ?>')" style="padding: 10px 15px; font-size: 0.75rem; width: 100%;">TÉLÉCHARGER</button>
                         <?php elseif ($activeProvider !== 'ollama' || !$isDefault): ?>
-                            <a href="?set_default=<?= urlencode($m['name']) ?>" style="font-size: 0.7rem; color: var(--primary); text-decoration: none; font-weight:800; letter-spacing:0.05em;">ACTIVER LOCAL</a>
+                            <div style="display:flex; justify-content:space-between; width:100%; align-items:center;">
+                                <a href="?set_default=<?= urlencode($m['name']) ?>" style="font-size: 0.7rem; color: var(--primary); text-decoration: none; font-weight:800; letter-spacing:0.05em;">ACTIVER LOCAL</a>
+                                <button onclick="confirmDelete('<?= $m['name'] ?>')" style="background:none; border:none; color: #f87171; cursor:pointer; font-size: 0.65rem; padding:0; opacity:0.6;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6">SUPPRIMER</button>
+                            </div>
                         <?php else: ?>
                             <span style="font-size: 0.7rem; color: var(--primary); font-weight:800; display:flex; align-items:center; gap:5px;">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>

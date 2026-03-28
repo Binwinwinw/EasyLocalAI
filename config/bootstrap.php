@@ -81,6 +81,7 @@ Container::register('llm', function() {
         return Container::get('ollama');
     } else {
         $defaults = [
+            'cortex'  => ['url' => 'http://cortex_gateway:8000/v1/chat/completions', 'model' => 'cortex'],
             'groq'    => ['url' => 'https://api.groq.com/openai/v1/chat/completions', 'model' => 'llama-3.3-70b-versatile'],
             'openai'  => ['url' => 'https://api.openai.com/v1/chat/completions', 'model' => 'gpt-4o'],
             'minimax' => ['url' => 'https://api.minimax.io/v1/chat/completions', 'model' => 'minimax-m2.7']

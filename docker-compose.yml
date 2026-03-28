@@ -10,12 +10,28 @@ services:
       - ollama_data:/root/.ollama
     restart: unless-stopped
 
+  cortex_gateway:
+    build: ./cortex_gateway
+    container_name: cortex_gateway_v4
+    ports:
+      - "8003:8000"
+    volumes:
+      - ./gateway-config.yaml:/app/gateway-config.yaml
+    environment:
+      - OLLAMA_HOST=http://ollama_upstream:11434
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GROQ_API_KEY=${GROQ_API_KEY}
+    restart: unless-stopped
+    depends_on:
+      - ollama
+
   php_app:
     build: .
     ports:
       - "8002:80"
     depends_on:
       - ollama
+      - cortex_gateway
     environment:
       - OLLAMA_HOST=http://ollama:11434
     volumes:
