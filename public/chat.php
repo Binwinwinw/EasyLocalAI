@@ -39,14 +39,18 @@ include __DIR__ . '/includes/header.php';
     </div>
 
     <div class="response-box" style="border:none; background:none; padding:0; margin-bottom: 50px;">
+        <div id="statusLabel" style="display:none; color:var(--primary); font-size: 0.8rem; font-weight: 700; margin-bottom: 10px; margin-left: 40px; text-transform: uppercase; letter-spacing: 0.1em; animation: pulse-glow 2s infinite;">
+            <span class="dot" style="display:inline-block; margin-right:8px;"></span>
+            Analyse et génération en cours...
+        </div>
         <div class="response-content" id="iaResponse" style="line-height: 1.8; font-size: 1.1rem; color: var(--text); padding: 0 40px;">Bonjour ! Posez votre question pour commencer l'analyse.</div>
     </div>
 
     <form class="chat-form" id="questionForm">
         <input type="text" id="qInput" placeholder="Posez votre question à l'IA..." required minlength="5" autocomplete="off">
         <button type="submit" id="submitBtn">
-            <div class="loader" id="loader"></div>
-            <span>Envoyer</span>
+            <div class="loader" id="loader" style="display:none; width:16px; height:16px; border-radius:50%; margin-right:10px;"></div>
+            <span id="btnText">Envoyer</span>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
         </button>
     </form>
@@ -154,6 +158,8 @@ include __DIR__ . '/includes/header.php';
 
         input.value = '';
         responseBox.innerText = "";
+        document.getElementById('statusLabel').style.display = "block";
+        document.getElementById('btnText').innerText = "Génération...";
         loader.style.display = "block";
         btn.disabled = true;
 
@@ -220,6 +226,8 @@ include __DIR__ . '/includes/header.php';
         } catch (e) {
             responseBox.innerText = "Erreur de transmission : " + e.message;
         } finally {
+            document.getElementById('statusLabel').style.display = "none";
+            document.getElementById('btnText').innerText = "Envoyer";
             loader.style.display = "none";
             btn.disabled = false;
         }
