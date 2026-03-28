@@ -17,3 +17,5 @@ Historique chronologique des sessions de développement.
 - **Unified Center** : Fusion de toute la gestion systême dans `setup.php` (Bento Grid).
 - **Hybrid Power** : Ajout du support multi-providers (Cloud API) en complément du local.
 - **Sync** : Resynchronisation de la documentation neuronale avec l'état réel du code V4.
+- **Fix** : Augmentation des timeouts CURL (90s -> 300s) pour éviter les erreurs sur les gros modèles.
+- **UX** : Ajout d'indicateurs de génération ("Réponse en cours...") dans le Chat.

@@ -18,10 +18,16 @@ Vous êtes sur un projet **Hybrid V4** (Souveraineté locale + Puissance Cloud).
 | **[../.agents/skills/](../.agents/skills/)** | Expertise technique (PHP-Expert, RAG, Ollama). |
 | **[../knowledge/](../knowledge/)** | Base de connaissances pour le RAG. |
 
-## 3. Règles d'Or Impératives
+## 3. Taxonomie du Projet (Anchoring)
+- **Application** : `src/App/` (Agent, Conversation, Memory).
+- **Core** : `src/Core/` (Container, Security, Ollama). Config dans `config/`.
+- **UI** : `public/` (V4 Hybrid Cinematic).
+- **RAG** : `src/RAG/` (Embedder, VectorStore). Données dans `knowledge/`.
+
+## 4. Règles d'Honneur (Code)
 - Respectez le style **Cinematic v3** (Sidebar, Bento, Scanlines).
 - Les clés API sont gérées via `localStorage` (Zero-Knowledge).
-- Le moteur d'agents supporte désormais le mode hybride (Local/Cloud).
+- Utilisez systématiquement `write_file` pour le code, JAMAIS `list_directory`.
 - Gardez ce fichier < 150 lignes.
 
 <!-- hacklm-memory:end -->

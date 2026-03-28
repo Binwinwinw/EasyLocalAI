@@ -69,8 +69,17 @@ class Agent {
     }
 
     private function parseArgs($raw) {
+        $raw = trim($raw);
+        if (empty($raw)) return [];
+
+        // Tentative en JSON (Format privilégié par les LLM modernes)
+        $json = json_decode($raw, true);
+        if (json_last_error() === JSON_ERROR_NONE && is_array($json)) {
+            return $json;
+        }
+
+        // Fallback : Format key="val", key='val' ou key=val
         $args = [];
-        // Parse key="val", key='val' or key=val
         preg_match_all('/(\w+)\s*=\s*(?:"([^"]*)"|\'([^\']*)\'|([^\s,)]+))/', $raw, $matches, PREG_SET_ORDER);
         foreach ($matches as $m) {
             $key = $m[1];
