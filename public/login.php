@@ -1,6 +1,5 @@
 <?php
 // public/login.php - DI Refactor
-session_start();
 require_once __DIR__ . '/../config/bootstrap.php';
 
 use EasyLocalAI\Core\Container;
@@ -14,7 +13,7 @@ if (isset($_POST['password'])) {
     }
     
     if ($auth->login($_POST['password'])) {
-        header("Location: index.php");
+        header("Location: chat.php");
         exit;
     } else {
         $error = "Mot de passe incorrect.";

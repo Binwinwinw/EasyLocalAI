@@ -3,9 +3,10 @@
 
 namespace EasyLocalAI\Core;
 
-class Ollama
+class Ollama implements LlmInterface
 {
     private string $baseUrl;
+    private string $ollamaBase; // Racine pure d'Ollama (ex: http://ollama:11434)
     private string $model;
     private string $systemPrompt;
     private string $memoryContext = "";
@@ -13,12 +14,19 @@ class Ollama
     public function __construct(Config $config, string $memoryContext = "")
     {
         $url = rtrim($config->get('api_base_url'), '/');
+        
+        // On sépare la racine Ollama de l'endpoint API
+        $parsedUrl = parse_url($url);
+        $this->ollamaBase = ($parsedUrl['scheme'] ?? 'http') . '://' . ($parsedUrl['host'] ?? 'localhost') . ($parsedUrl['port'] ? ':' . $parsedUrl['port'] : '');
+        
         // Si l'URL contient déjà 'chat/completions', on ne l'ajoute pas
         if (strpos($url, 'chat/completions') !== false) {
             $this->baseUrl = $url;
         } else {
-            $this->baseUrl = $url . '/chat/completions';
+            // Si /v1 est dans l'URL mais pas chat/completions
+            $this->baseUrl = $this->ollamaBase . '/v1/chat/completions';
         }
+
         $this->model   = $config->get('model_name', 'llama3.2');
         $this->systemPrompt = $config->getSystemPrompt();
         $this->memoryContext = $memoryContext;
@@ -53,7 +61,7 @@ class Ollama
             ]),
             CURLOPT_HTTPHEADER     => ["Content-Type: application/json"],
             CURLOPT_CONNECTTIMEOUT => 10,
-            CURLOPT_TIMEOUT        => 90,
+            CURLOPT_TIMEOUT        => 300,
         ]);
 
         $response = curl_exec($curl);
@@ -106,7 +114,7 @@ class Ollama
      * Liste les modèles installés localement.
      */
     public function listModels(): array {
-        $url = str_replace('/chat/completions', '', $this->baseUrl) . '/api/tags';
+        $url = $this->ollamaBase . '/api/tags';
         $curl = curl_init($url);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
         $response = curl_exec($curl);
@@ -117,19 +125,48 @@ class Ollama
     }
 
     /**
-     * Tente de télécharger un nouveau modèle.
+     * Télécharge un modèle en mode streaming pour suivre la progression.
      */
-    public function pullModel(string $name): bool {
-        $url = str_replace('/chat/completions', '', $this->baseUrl) . '/api/pull';
+    public function pullStream(string $name, callable $onProgress): bool {
+        $url = $this->ollamaBase . '/api/pull';
         $curl = curl_init($url);
         curl_setopt_array($curl, [
             CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => json_encode(['name' => $name, 'stream' => false]),
+            CURLOPT_POSTFIELDS => json_encode(['name' => $name, 'stream' => true]),
+            CURLOPT_RETURNTRANSFER => false,
+            CURLOPT_HTTPHEADER => ["Content-Type: application/json"],
+            CURLOPT_WRITEFUNCTION => function($ch, $data) use ($onProgress) {
+                $lines = explode("\n", $data);
+                foreach ($lines as $line) {
+                    $json = json_decode(trim($line), true);
+                    if ($json) {
+                        $onProgress($json);
+                    }
+                }
+                return strlen($data);
+            },
+            CURLOPT_TIMEOUT => 3600
+        ]);
+        
+        $success = curl_exec($curl);
+        curl_close($curl);
+        return $success !== false;
+    }
+
+    /**
+     * Supprime un modèle localement pour libérer de l'espace.
+     */
+    public function deleteModel(string $name): bool {
+        $url = $this->ollamaBase . '/api/delete';
+        $curl = curl_init();
+        curl_setopt_array($curl, [
+            CURLOPT_URL => $url,
+            CURLOPT_CUSTOMREQUEST => "DELETE",
+            CURLOPT_POSTFIELDS => json_encode(['name' => $name]),
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_HTTPHEADER => ["Content-Type: application/json"],
-            CURLOPT_TIMEOUT => 300 // Long timeout for download
         ]);
-        $response = curl_exec($curl);
+        curl_exec($curl);
         $status = curl_getinfo($curl, CURLINFO_HTTP_CODE);
         curl_close($curl);
         return $status === 200;

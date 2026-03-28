@@ -1,10 +1,12 @@
-# Décisions Architecturales (V2 Evolution) 🏛️
+# Décisions Architecturales (V4 Hybrid Cinematic) 🏛️
 
-Historique des choix majeurs faits pour transformer EasyLocalAI en plateforme professionnelle.
+Historique des choix majeurs faits pour transformer EasyLocalAI en plateforme de niveau professionnel.
 
 - **Modularité (PSR-4)** : Passage d'un fichier monolithique `index.php` vers une structure de classes namespacées dans `src/`.
-- **Injection de Dépendances** : Création de `Core\Container` pour centraliser la gestion des services et éviter les dépendances hardcodées.
-- **Moteur d'Agents (Tools)** : Implémentation de `App\Agent` capable de détecter des balises `[TOOL: ...]` et d'exécuter des scripts PHP dynamiquement.
-- **RAG Vectoriel** : Abandon de la recherche par mots-clés pour un système d'embeddings avec Ollama (`nomic-embed-text`) et `VectorStore` JSON.
-- **Router Neural** : Mise en place d'un système de routage de contexte via `.github/copilot-instructions.md` limité à 150 lignes.
-- **Thémage Dynamique** : Support natif du mode Sombre/Clair via variables CSS et localStorage.
+- **Injection de Dépendances** : Création de `Core\Container` pour centraliser la gestion des services.
+- **Moteur d'Agents (Tools)** : Implémentation de `App\Agent` capable de raisonner via des outils (Clock, Memory).
+- **RAG Vectoriel** : Utilisation d'embeddings Ollama (`nomic-embed-text`) et stockage vectoriel JSON.
+- **Unified Control Center (V4)** : Fusion de la configuration, des modèles et de l'expertise neuronale dans un seul fichier `setup.php` avec une interface **Bento Grid**.
+- **Cinematic UI (V3/V4)** : Layout avec **Sidebar fixe**, scanlines HUD, et thémage dynamique sombre/clair.
+- **Pont Multi-Providers** : Support hybride de **Ollama (local)** et des APIs Cloud (**Groq, OpenAI, MiniMax**) avec gestion sécurisée des clés via `localStorage`.
+- **Streaming de Pull** : Implémentation de `pull_stream.php` pour suivre en temps réel le téléchargement des modèles Ollama.

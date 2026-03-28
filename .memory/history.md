@@ -1,20 +1,19 @@
 # Journal de Bord (Development History) 📜
 
-Historique chronologique des sessions de développement et des avancées majeures.
+Historique chronologique des sessions de développement.
 
 ## [2026-03-26] - Session : Révolution v2 (Architecture & IA)
-- **Architecture** : Migration complète vers une structure PSR-4 avec un `Core\Container`.
-- **Sécurité** : Implémentation du système d'authentification (`Auth`) et protection CSRF globale.
-- **Intelligence** : Création de l'orchestrateur d'agents (`Agent`) et du premier set d'outils (`Clock`, `Memory`).
-- **RAG** : Passage au RAG Vectoriel (Embeddings) avec `VectorStore` persistant.
-- **UX/UI** : Refonte totale du design (Dark/Light mode, Outfit font) et ajout de la gestion des modèles Ollama.
+- **Architecture** : Migration vers PSR-4 et `Core\Container`.
+- **Sécurité** : Auth et CSRF.
+- **Intelligence** : Orchestrateur `Agent` et premiers outils.
+- **RAG** : Passage au vectoriel.
 
 ## [2026-03-27] - Session : Infrastructure Neuronale
-- **Neural Router** : Refonte de `.github/copilot-instructions.md` pour un routage de contexte optimal (< 150 lignes).
-- **Organisation** : Création des dossiers `.agents/skills/` et `.github/prompts/`.
-- **Expertise** : Rédaction des fiches de compétences (`php-expert`, `ollama-master`, `rag-specialist`).
-- **Mémoire** : Initialisation complète du "cerveau" du projet dans `.memory/`.
-- **Journal** : Création de ce fichier `history.md` pour un suivi chronologique.
+- **Neural Router** : Refonte de `.github/copilot-instructions.md`.
+- **Cerveau** : Initialisation de `.memory/` et `.agents/skills/`.
 
----
-*Fin de session - Plateforme v2 stable et documentée.*
+## [2026-03-28] - Session : Hybrid V4 Cinematic ⚡
+- **UI Overhaul** : Passage au layout Cinematic avec Sidebar et scanlines.
+- **Unified Center** : Fusion de toute la gestion systême dans `setup.php` (Bento Grid).
+- **Hybrid Power** : Ajout du support multi-providers (Cloud API) en complément du local.
+- **Sync** : Resynchronisation de la documentation neuronale avec l'état réel du code V4.

@@ -1,31 +1,27 @@
 <!-- hacklm-memory:start -->
-# EasyLocalAI - Neural Router 🧠
+# EasyLocalAI - Neural Router (Hybrid V4) 🧠
 
-Vous êtes un expert en IA agissant sur le projet **EasyLocalAI**. Votre contexte est distribué. Avant toute action, identifiez le "neurone" (fichier) pertinent.
+Vous êtes sur un projet **Hybrid V4** (Souveraineté locale + Puissance Cloud). Votre contexte est distribué.
 
-## 1. La Boucle de Pensée (Thought Loop)
-1. **Lire** : Vérifiez [../.memory/security.md](../.memory/security.md) et [../.memory/instructions.md](../.memory/instructions.md).
-2. **Mapper** : Si la tâche est spécifique, lisez le prompt associé dans [prompts/](prompts/).
-3. **Agir** : Utilisez vos compétences techniques définies dans [../.agents/skills/](../.agents/skills/).
-4. **Mémoriser** : Après chaque décision majeure, mettez à jour [../.memory/decisions.md](../.memory/decisions.md).
+## 1. La Boucle de Pensée
+1. **Sécurité** : Consultez `../.memory/security.md` avant toute action POST.
+2. **Architecture** : Le projet utilise un `Core\Container`. Vérifiez `../config/bootstrap.php`.
+3. **Pilotage** : Toute la config se passe dans `setup.php` (Unified Control Center).
+4. **Mémoriser** : Résumez les changements dans `../.memory/history.md`.
 
-## 2. Cartographie du Cerveau (Context Map)
+## 2. Cartographie du Cerveau
 
 | Neurone | Usage |
 | :--- | :--- |
-| **[../.memory/](../.memory/)** | Mémoire long terme (Préférences, Décisions, Quirks). |
-| **[prompts/](prompts/)** | Instructions dynamiques pour des tâches spécifiques. |
-| **[../.agents/skills/](../.agents/skills/)** | Maîtrise technique et dossiers d'expertise. |
-| **[../knowledge/](../knowledge/)** | Base de connaissances brute pour le RAG. |
+| **[../.memory/](../.memory/)** | Mémoire long terme (Décisions, Quirks, Sécurité). |
+| **[prompts/](prompts/)** | Instructions pour tâches spécifiques (Refactor, etc.). |
+| **[../.agents/skills/](../.agents/skills/)** | Expertise technique (PHP-Expert, RAG, Ollama). |
+| **[../knowledge/](../knowledge/)** | Base de connaissances pour le RAG. |
 
 ## 3. Règles d'Or Impératives
-- Soyez concis (style Hemingway).
-- Pas de jargon inutile.
-- Ne dépassez JAMAIS 150 lignes pour ce fichier routeur.
-- Respectez la structure modulaire PHP (Container, PSR-4).
-
-## 4. Skills & Prompts Disponibles
-- `skills/php-expert.md` : Maîtrise de l'architecture backend.
-- `prompts/refactor.md` : Guide pour nettoyer le code legacy.
+- Respectez le style **Cinematic v3** (Sidebar, Bento, Scanlines).
+- Les clés API sont gérées via `localStorage` (Zero-Knowledge).
+- Le moteur d'agents supporte désormais le mode hybride (Local/Cloud).
+- Gardez ce fichier < 150 lignes.
 
 <!-- hacklm-memory:end -->

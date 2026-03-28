@@ -1,13 +1,16 @@
 <?php
 // public/save_history.php
-
-session_start();
 require_once __DIR__ . '/../config/bootstrap.php';
 
 use EasyLocalAI\App\Conversation;
 
-if (isset($_POST['q'], $_POST['a'])) {
-    Conversation::addMessage($_POST['q'], $_POST['a']);
-    Conversation::limit(5);
-    echo json_encode(["status" => "ok"]);
+$q = $_POST['q'] ?? '';
+$a = $_POST['a'] ?? '';
+
+if ($q && $a) {
+    Conversation::addMessage($q, $a);
+    Conversation::limit(10); // Garder les 10 derniers messages
+    echo json_encode(['status' => 'success']);
+} else {
+    echo json_encode(['status' => 'error', 'message' => 'Invalid data']);
 }

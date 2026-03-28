@@ -8,9 +8,6 @@ class Auth {
 
     public function __construct(Config $config) {
         $this->config = $config;
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
     }
 
     /**

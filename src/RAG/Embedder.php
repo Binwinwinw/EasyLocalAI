@@ -35,7 +35,7 @@ class Embedder {
             ]),
             CURLOPT_HTTPHEADER     => ["Content-Type: application/json"],
             CURLOPT_CONNECTTIMEOUT => 5,
-            CURLOPT_TIMEOUT        => 30,
+            CURLOPT_TIMEOUT        => 120,
         ]);
 
         $response = curl_exec($curl);

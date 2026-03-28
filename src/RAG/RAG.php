@@ -53,9 +53,9 @@ class RAG
     }
 
     /**
-     * Découpe et indexe un document dans le VectorStore.
+     * Découpe et indexe un document dans le VectorStore (Auto-RAG).
      */
-    private function indexDocument(string $filename, string $content): void {
+    public function indexDocument(string $filename, string $content): void {
         // Simple chunking par paragraphes ou blocs de 1000 caractères
         $chunks = str_split($content, 1000);
         foreach ($chunks as $chunk) {
