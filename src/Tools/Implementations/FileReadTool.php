@@ -3,6 +3,7 @@
 namespace EasyLocalAI\Tools\Implementations;
 
 use EasyLocalAI\Tools\ToolInterface;
+use EasyLocalAI\Core\SecurityGuard;
 
 class FileReadTool implements ToolInterface {
     private $baseDir;
@@ -31,10 +32,17 @@ class FileReadTool implements ToolInterface {
         }
 
         $requestedPath = $args['path'];
-        $fullPath = realpath($this->baseDir . DIRECTORY_SEPARATOR . $requestedPath);
+        $fullPath = $this->baseDir . DIRECTORY_SEPARATOR . $requestedPath;
 
-        if (!$fullPath || strpos($fullPath, $this->baseDir) !== 0) {
-            return "Erreur: Accès interdit ou fichier non trouvé.";
+        // 1. Validation via SecurityGuard
+        $guard = SecurityGuard::isPathAllowed($fullPath, false);
+        if ($guard !== true) {
+            return $guard;
+        }
+
+        $realFullPath = realpath($fullPath);
+        if (!$realFullPath) {
+            return "Erreur: Fichier '$requestedPath' non trouvé.";
         }
 
         if (!is_file($fullPath)) {

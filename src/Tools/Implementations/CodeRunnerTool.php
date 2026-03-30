@@ -36,20 +36,38 @@ class CodeRunnerTool implements ToolInterface {
 
         $code = $args['code'];
         
-        // Empêcher l'exécution de code malveillant évident (très basique)
-        if (strpos($code, 'shell_exec') !== false || strpos($code, 'system') !== false) {
-            return "Erreur: Les fonctions système ne sont pas autorisées dans le Sandbox.";
+        // --- GARDE-FOU : Liste Noire de Fonctions Dangereuses ---
+        $forbidden = [
+            'system', 'shell_exec', 'exec', 'passthru', 'popen', 'proc_open', 'pcntl_exec',
+            'curl_init', 'file_get_contents', 'file_put_contents', 'unlink', 'rmdir',
+            'mysql_', 'mysqli_', 'pdo', 'eval', 'assert', 'create_function'
+        ];
+
+        foreach ($forbidden as $func) {
+            if (stripos($code, $func) !== false) {
+                return "Sécurité : La fonction '$func' est interdite dans le bac à sable de l'Agent.";
+            }
+        }
+
+        // Vérification des backticks (exécution de commande invisible)
+        if (strpos($code, '`') !== false) {
+             return "Sécurité : L'utilisation des backticks pour l'exécution système est interdite.";
         }
 
         file_put_contents($this->tmpFile, $code);
 
-        // Exécution via PHP CLI pour capturer la sortie
+        // Exécution via PHP CLI avec limitations strictes :
+        // - max_execution_time=2 : Empêche les boucles infinies
+        // - open_basedir : Limite l'accès fichiers au dossier tmp
+        $tmpDir = dirname($this->tmpFile);
+        $cmd = "php -d max_execution_time=2 -d open_basedir=" . escapeshellarg($tmpDir) . " " . escapeshellarg($this->tmpFile) . " 2>&1";
+        
         $output = [];
         $returnVar = 0;
-        exec("php " . escapeshellarg($this->tmpFile) . " 2>&1", $output, $returnVar);
+        exec($cmd, $output, $returnVar);
 
         $result = implode("\n", $output);
         
-        return "--- Résultat de l'exécution ---\n" . ($result ?: "(Aucune sortie)") . "\n--- Code de retour: $returnVar ---";
+        return "--- Résultat de l'exécution ---\n" . ($result ?: "(Aucune sortie)") . "\n--- Statut: " . ($returnVar === 0 ? "Succès" : "Erreur/Timeout ($returnVar)") . " ---";
     }
 }

@@ -1,5 +1,7 @@
 fastapi
-uvicorn
+uvicorn[standard]
 httpx
 pyyaml
 python-dotenv
+PyPDF2
+python-multipart

@@ -13,27 +13,29 @@ class Embedder {
     private string $model;
 
     public function __construct(Config $config) {
-        $url = rtrim($config->get('api_base_url'), '/');
-        // Si l'URL finit par /chat/completions, on remonte d'un niveau
-        $this->baseUrl = str_replace('/chat/completions', '', $url) . '/api/embeddings';
-        // Modèle par défaut pour les embeddings
+        $this->baseUrl = "http://cortex_gateway_v4:8000/v1/rag/embed";
         $this->model = $config->get('embedding_model', 'nomic-embed-text');
     }
 
     /**
-     * Génère un vecteur pour une chaîne de caractères.
+     * Génère un vecteur via le Gateway.
      */
     public function embed(string $text): array {
         $curl = curl_init();
+        $token = \EasyLocalAI\Core\Container::get('env')->get('CORTEX_API_KEY');
+        
         curl_setopt_array($curl, [
             CURLOPT_URL            => $this->baseUrl,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_POST           => true,
             CURLOPT_POSTFIELDS     => json_encode([
                 'model' => $this->model,
-                'prompt' => $text,
+                'text' => $text,
             ]),
-            CURLOPT_HTTPHEADER     => ["Content-Type: application/json"],
+            CURLOPT_HTTPHEADER     => [
+                "Content-Type: application/json",
+                "X-Cortex-Token: $token"
+            ],
             CURLOPT_CONNECTTIMEOUT => 5,
             CURLOPT_TIMEOUT        => 120,
         ]);

@@ -3,6 +3,7 @@
 namespace EasyLocalAI\Tools\Implementations;
 
 use EasyLocalAI\Tools\ToolInterface;
+use EasyLocalAI\Core\SecurityGuard;
 use EasyLocalAI\RAG\RAG;
 
 class FileWriteTool implements ToolInterface {
@@ -37,17 +38,13 @@ class FileWriteTool implements ToolInterface {
         $requestedPath = $args['path'];
         $fullPath = $this->baseDir . DIRECTORY_SEPARATOR . $requestedPath;
 
-        // On vérifie si le dossier parent existe
-        $dir = dirname($fullPath);
-        if (!is_dir($dir)) {
-            mkdir($dir, 0755, true);
+        // 1. Validation via SecurityGuard (Mode Écriture)
+        $guard = SecurityGuard::isPathAllowed($fullPath, true);
+        if ($guard !== true) {
+            return $guard;
         }
 
-        // Vérification de sécurité (Directory Traversal)
-        $realFullPath = realpath($fullPath) ?: $fullPath; // realpath peut échouer si le fichier n'existe pas encore
-        if (strpos($realFullPath, $this->baseDir) !== 0) {
-            return "Erreur: Accès interdit (tentative de sortie de la racine).";
-        }
+        // On vérifie si le dossier parent existe
 
         // Écriture du fichier
         if (file_put_contents($fullPath, $args['content']) !== false) {

@@ -25,17 +25,30 @@ include __DIR__ . '/includes/header.php';
 ?>
 
 <header style="margin-bottom: 50px; text-align: center;">
-    <h1 style="display:inline-flex; align-items:center; gap:15px; font-weight: 300; letter-spacing: 2px;">
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--primary); opacity: 0.8;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-        AI WORKSPACE <span style="font-size: 0.5rem; background: var(--primary); color:white; padding: 2px 8px; border-radius: 20px; vertical-align: middle; margin-left: 10px;"><?= strtoupper($activeProvider) ?></span>
+    <h1 style="display:inline-flex; flex-direction:column; align-items:center; gap:5px; font-weight: 800; letter-spacing: -1px; text-transform: uppercase;">
+        <div style="display:flex; align-items:center; gap:15px;">
+            <svg width="45" height="45" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--primary); filter: drop-shadow(0 0 10px var(--primary-glow));"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+            EASY LOCAL AI
+        </div>
+        <span style="font-size: 0.9rem; font-weight: 300; letter-spacing: 4px; color: var(--text-dim); opacity: 0.8; margin-top: -5px;">WORKSPACE</span>
     </h1>
-    <p class="subtitle" style="opacity: 0.5;">Dialogue souverain et orchestration cognitive <?= $activeProvider !== 'ollama' ? 'boosté par le Cloud' : '100% Locale' ?>.</p>
+    <div style="margin-top: 15px;">
+        <span style="font-size: 0.55rem; background: var(--primary); color:white; padding: 3px 10px; border-radius: 20px; vertical-align: middle;"><?= strtoupper($activeProvider) ?> MODE</span>
+        <span style="font-size: 0.55rem; background: rgba(255,255,255,0.05); color:var(--text-dim); padding: 3px 10px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); margin-left: 5px;"><?= $config->get('model_name', 'llama3.2') ?></span>
+    </div>
+    <p class="subtitle" style="opacity: 0.6; font-size: 1rem; margin-top: 20px;">L'intelligence souveraine à pleine puissance, augmentée par le RAG et votre infrastructure locale.</p>
 </header>
 
 <div class="main-chat-area">
-    <!-- Zone de Pensée (Agent Thought Process) -->
-    <div id="thoughtContainer" style="display:none; margin-bottom: 25px;">
-        <div id="thoughtLog"></div>
+    <!-- Zone de Pensée (Agent Thought Process) - Cinematic Timeline -->
+    <div id="thoughtContainer" style="display:none; margin-bottom: 40px; padding: 0 40px;">
+        <div style="font-size: 0.65rem; color: var(--primary); font-weight: 700; letter-spacing: 0.2em; margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+            <div class="pulsing-brain" style="width: 12px; height: 12px; background: var(--primary); border-radius: 50%; box-shadow: 0 0 15px var(--primary);"></div>
+            COGNITION LOCALE - ANALYSE EN COURS
+        </div>
+        <div id="thoughtLog" class="thought-timeline" style="border-left: 1px dashed rgba(255,255,255,0.1); margin-left: 6px; padding-left: 20px; display: flex; flex-direction: column; gap: 15px;">
+            <!-- Les étapes de pensée apparaissent ici dynamiquement -->
+        </div>
     </div>
 
     <div class="response-box" style="border:none; background:none; padding:0; margin-bottom: 50px;">
@@ -58,10 +71,11 @@ include __DIR__ . '/includes/header.php';
     <div style="display:flex; justify-content: space-between; align-items: center; margin-top: 25px; padding: 0 10px;">
         <div style="display:flex; gap: 20px;">
             <form method="post" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="<?= \EasyLocalAI\Core\Security::getCsrfToken() ?>">
                 <input type="file" name="knowledge_file" id="kFile" style="display:none;" onchange="this.form.submit()">
                 <label for="kFile" style="cursor:pointer; font-size: 0.75rem; color: var(--text-dim); display:flex; align-items:center; gap:8px; opacity:0.7; transition:0.3s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.7">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                    Contextualiser (.txt)
+                    Contextualiser (.pdf, .txt, .md)
                 </label>
                 <?php if (!empty($upload_msg)): ?><span style="font-size: 0.7rem; color: #10b981; margin-left:10px;"><?= $upload_msg ?></span><?php endif; ?>
             </form>
@@ -205,8 +219,23 @@ include __DIR__ . '/includes/header.php';
                             if (currentEvent === "thought") {
                                 const log = document.getElementById('thoughtLog');
                                 const step = document.createElement('div');
-                                step.className = "thought-step";
-                                step.innerHTML = `⚡ ${json.content}`;
+                                step.className = "thought-step fadeIn";
+                                
+                                // Coloration et icône selon le type du message (RÉFLEXION, ACTION, OBSERVATION)
+                                let icon = "🧬";
+                                let color = "rgba(255,255,255,0.6)";
+                                if (json.content.startsWith("ACTION")) { icon = "🛠️"; color = "var(--primary)"; }
+                                if (json.content.startsWith("OBSERVATION")) { icon = "👁️"; color = "#10b981"; }
+                                if (json.content.startsWith("RÉFLEXION")) { icon = "🧠"; color = "#a78bfa"; }
+
+                                step.style.background = "rgba(255,255,255,0.02)";
+                                step.style.padding = "10px 15px";
+                                step.style.borderRadius = "12px";
+                                step.style.border = `1px solid ${color.replace(')', ', 0.1)')}`;
+                                step.style.fontSize = "0.75rem";
+                                step.style.color = color;
+
+                                step.innerHTML = `<span style="margin-right:8px;">${icon}</span> ${json.content}`;
                                 log.appendChild(step);
                                 log.scrollTop = log.scrollHeight;
                             } else {

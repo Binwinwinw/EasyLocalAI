@@ -29,6 +29,8 @@ spl_autoload_register(function ($class) {
 use EasyLocalAI\Core\Container;
 use EasyLocalAI\Core\Config;
 use EasyLocalAI\Core\Auth;
+use EasyLocalAI\Core\EnvManager;
+use EasyLocalAI\Core\FileExplorer;
 use EasyLocalAI\Core\Ollama;
 use EasyLocalAI\Core\CloudLlm;
 use EasyLocalAI\App\Memory;
@@ -52,6 +54,14 @@ ini_set('display_errors', 1);
 
 Container::register('config', function() {
     return new Config();
+});
+
+Container::register('env', function() {
+    return new EnvManager();
+});
+
+Container::register('explorer', function() {
+    return new FileExplorer();
 });
 
 Container::register('auth', function() {

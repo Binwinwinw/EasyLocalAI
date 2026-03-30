@@ -15,15 +15,17 @@ class Ollama implements LlmInterface
     {
         $url = rtrim($config->get('api_base_url'), '/');
         
-        // On sépare la racine Ollama de l'endpoint API
-        $parsedUrl = parse_url($url);
-        $this->ollamaBase = ($parsedUrl['scheme'] ?? 'http') . '://' . ($parsedUrl['host'] ?? 'localhost') . ($parsedUrl['port'] ? ':' . $parsedUrl['port'] : '');
-        
-        // Si l'URL contient déjà 'chat/completions', on ne l'ajoute pas
+        // Si l'URL contient déjà 'chat/completions', c'est probablement le Gateway
         if (strpos($url, 'chat/completions') !== false) {
             $this->baseUrl = $url;
+            // Pour l'administration, on tente d'extraire la base, mais on garde en tête 
+            // que c'est le Gateway. Un réglage 'ollama_host' dédié serait idéal.
+            $parsedUrl = parse_url($url);
+            $this->ollamaBase = ($parsedUrl['scheme'] ?? 'http') . '://' . ($parsedUrl['host'] ?? 'localhost') . (isset($parsedUrl['port']) ? ':' . $parsedUrl['port'] : '');
         } else {
-            // Si /v1 est dans l'URL mais pas chat/completions
+            // Comportement standard Ollama
+            $parsedUrl = parse_url($url);
+            $this->ollamaBase = ($parsedUrl['scheme'] ?? 'http') . '://' . ($parsedUrl['host'] ?? 'localhost') . (isset($parsedUrl['port']) ? ':' . $parsedUrl['port'] : '');
             $this->baseUrl = $this->ollamaBase . '/v1/chat/completions';
         }
 
@@ -92,12 +94,18 @@ class Ollama implements LlmInterface
             ]),
             CURLOPT_HTTPHEADER     => ["Content-Type: application/json"],
             CURLOPT_WRITEFUNCTION  => function($ch, $data) {
-                // Ollama peut envoyer plusieurs lignes JSON dans un seul chunk
+                // Ollama/Gateway peut envoyer plusieurs lignes JSON dans un seul chunk
                 $lines = explode("\n", $data);
                 foreach ($lines as $line) {
                     $cleanLine = trim($line);
                     if ($cleanLine) {
-                        echo "data: " . $cleanLine . "\n\n";
+                        // Si la ligne commence déjà par "data: ", on l'envoie telle quelle
+                        if (strpos($cleanLine, 'data: ') === 0) {
+                            echo $cleanLine . "\n\n";
+                        } else {
+                            // Sinon on l'enveloppe au format SSE
+                            echo "data: " . $cleanLine . "\n\n";
+                        }
                         if (ob_get_level() > 0) ob_flush();
                         flush();
                     }

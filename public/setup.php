@@ -5,9 +5,10 @@ require_once __DIR__ . '/../config/bootstrap.php';
 use EasyLocalAI\Core\Container;
 use EasyLocalAI\Core\Security;
 
-$ollama = Container::get('ollama'); // On garde ollama pour la liste des modèles locaux
+$ollama = Container::get('ollama');
 $config = Container::get('config');
 $setup  = Container::get('setup');
+$env    = Container::get('env');
 
 // Handle Model Actions (Local Ollama)
 if (isset($_GET['set_default'])) {
@@ -44,8 +45,32 @@ if (isset($_GET['delete_model'])) {
     }
 }
 
+// Action : Réinitialiser la base vectorielle
+if (isset($_POST['action']) && $_POST['action'] === 'clear_vectors') {
+    Container::get('vectorStore')->clear();
+    header("Location: setup.php?vectors_cleared=1");
+    exit;
+}
+
+// Action : Supprimer un document physique
+if (isset($_GET['delete_doc'])) {
+    $docName = basename($_GET['delete_doc']);
+    $docPath = __DIR__ . '/../knowledge/' . $docName;
+    if (file_exists($docPath)) unlink($docPath);
+    header("Location: setup.php?doc_deleted=1");
+    exit;
+}
+
 if ($setup->handleForm()) {
     header("Location: chat.php");
+    exit;
+}
+
+// Handle Infrastructure Change (Ollama Models Path)
+if (isset($_POST['action']) && $_POST['action'] === 'set_infra') {
+    $path = Security::sanitize($_POST['ollama_models_path']);
+    $success = $env->set('OLLAMA_MODELS_PATH', $path);
+    header("Location: setup.php?updated_infra=" . ($success ? "1" : "0"));
     exit;
 }
 
@@ -116,6 +141,7 @@ include __DIR__ . '/includes/header.php';
         <h3 style="margin:0 0 15px 0; font-size: 0.8rem; letter-spacing: 0.1em; color: #a78bfa;">PONT API & CLOUDS</h3>
         <form method="post" id="providerForm" onsubmit="saveApiKeyBeforeSubmit(event)">
             <input type="hidden" name="action" value="set_provider">
+            <input type="hidden" name="csrf_token" value="<?= Security::getCsrfToken() ?>">
             <input type="hidden" name="api_key" id="api_key_hidden">
             
             <div style="display: flex; flex-direction: column; gap: 15px;">
@@ -151,6 +177,18 @@ include __DIR__ . '/includes/header.php';
             <span style="color:#10b981;">●</span> <strong>MoE (Experts)</strong> : Gratuit. Ratio IQ/Vitesse optimal.<br>
             <span style="color:#10b981;">●</span> <strong>Hybrid</strong> : Utilisez le Local pour le RAG confidentiel et le Cloud pour le code complexe.
         </p>
+    </div>
+
+    <!-- POWER BOOST (GPU NATIVE) -->
+    <div class="bento-item bento-span-2" style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.05) 0%, rgba(217, 119, 6, 0.05) 100%); border: 1px solid rgba(245, 158, 11, 0.2);">
+        <h3 style="margin:0 0 10px 0; font-size: 0.8rem; letter-spacing: 0.1em; color: #f59e0b;">POWER BOOST (GPU HÔTE)</h3>
+        <p style="font-size: 0.75rem; line-height: 1.4; opacity: 0.8; margin-bottom: 15px;">
+            Utilisez la **puissance GPU** de votre Windows (Ollama Natif) comme accélérateur principal.
+        </p>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+            <button onclick="openNativeDiscovery()" style="background: #f59e0b; color: white; width: 100%; justify-content: center;">DÉTECTER MES MODÈLES PC</button>
+            <div id="nativeStatus" style="font-size: 0.65rem; color: var(--text-dim); text-align: center;">Vérifiez votre Ollama Windows</div>
+        </div>
     </div>
 
     <!-- Section Téléchargement Modèles (Local) -->
@@ -216,11 +254,280 @@ include __DIR__ . '/includes/header.php';
                     </div>
                 </div>
             <?php endforeach; ?>
+
+            <?php if (empty($models)): ?>
+                <div style="grid-column: 1 / -1; padding: 60px 20px; text-align: center; background: rgba(255,255,255,0.02); border: 2px dashed rgba(255,255,255,0.05); border-radius: 24px;">
+                    <div style="font-size: 3rem; margin-bottom: 20px;">📦</div>
+                    <h3 style="margin: 0 0 10px 0; font-size: 1.2rem; color: var(--primary);">Bibliothèque Vide</h3>
+                    <p style="opacity: 0.6; font-size: 0.85rem; max-width: 400px; margin: 0 auto 25px auto; line-height: 1.5;">
+                        Pour commencer à utiliser l'IA gratuitement et hors-ligne, vous devez installer votre premier modèle de langage.
+                    </p>
+                    <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                        <button onclick="startPull('llama3.2')" style="background: var(--primary); color: white; padding: 12px 25px; font-weight: 700;">
+                            🚀 INSTALLER LLAMA 3.2 (2GB)
+                        </button>
+                        <button onclick="startPull('qwen2.5:3b')" style="background: rgba(255,255,255,0.05); color: white; padding: 12px 25px;">
+                            🏮 QWEN 2.5 (3B)
+                        </button>
+                    </div>
+                </div>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <!-- STOCKAGE & INFRASTRUCTURE -->
+    <div class="bento-item bento-span-4" style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(37, 99, 235, 0.05) 100%); border: 1px solid rgba(59, 130, 246, 0.2);">
+        <h3 style="margin:0 0 15px 0; font-size: 0.8rem; letter-spacing: 0.1em; color: #3b82f6;">STOCKAGE & INFRASTRUCTURE</h3>
+        <form method="post" style="display: flex; flex-direction: column; gap: 15px;">
+            <input type="hidden" name="action" value="set_infra">
+            <input type="hidden" name="csrf_token" value="<?= Security::getCsrfToken() ?>">
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <label style="font-size: 0.75rem; color: var(--text-dim);">Chemin Racine des Modèles (Sur l'Hôte)</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" name="ollama_models_path" id="ollama_models_path" value="<?= htmlspecialchars($env->get('OLLAMA_MODELS_PATH', 'F:/.ollama')) ?>" placeholder="ex: F:/.ollama ou /home/user/.ollama" style="background: rgba(0,0,0,0.2); border-radius: 10px; padding: 12px; flex: 1; font-family: monospace; font-size: 0.8rem;">
+                    <button type="button" onclick="openFolderPicker()" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; min-width: 120px; display: flex; align-items: center; gap: 8px; justify-content: center;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                        PARCOURIR
+                    </button>
+                    <button type="submit" style="background: #3b82f6; color: white; min-width: 120px;">SAUVEGARDER</button>
+                </div>
+                <p style="font-size: 0.65rem; color: var(--text-dim); margin: 5px 0 0 0; line-height: 1.4;">
+                    💡 <strong>Note</strong> : Pour Windows, utilisez des slashs <code>/</code>. <br>
+                    ⚠️ <strong>Important</strong> : Après avoir sauvegardé, vous devez redémarrer le système avec <code>docker-compose up -d</code>.
+                </p>
+            </div>
+            <?php if (isset($_GET['updated_infra'])): ?>
+                <div style="font-size: 0.75rem; color: #10b981; background: rgba(16, 185, 129, 0.1); padding: 10px; border-radius: 8px; border: 1px solid rgba(16, 185, 129, 0.2);">
+                    ✅ Configuration enregistrée dans le fichier .env. Redémarrez l'infrastructure pour appliquer.
+                </div>
+            <?php endif; ?>
+        </form>
+    </div>
+
+    <!-- GESTIONNAIRE DE CONNAISSANCES (ADVANCED RAG) -->
+    <div class="bento-item bento-span-4" style="background: linear-gradient(135deg, rgba(167, 139, 250, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%); border: 1px solid rgba(139, 92, 246, 0.2);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h3 style="margin:0; font-size: 0.8rem; letter-spacing: 0.1em; color: #a78bfa;">BIBLIOTHÈQUE DE CONNAISSANCES</h3>
+            <form method="post" onsubmit="return confirm('Attention : Cela supprimera tout l\'index sémantique. Continuer ?')">
+                <input type="hidden" name="action" value="clear_vectors">
+                <input type="hidden" name="csrf_token" value="<?= Security::getCsrfToken() ?>">
+                <button type="submit" style="background:rgba(239, 68, 68, 0.1); color:#f87171; border:1px solid rgba(239, 68, 68, 0.2); font-size:0.6rem; padding:5px 10px; cursor:pointer;">RÉINITIALISER L'INDEX (VECTORS.JSON)</button>
+            </form>
+        </div>
+
+        <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:15px;">
+            <?php 
+                $knowledgeDir = __DIR__ . '/../knowledge/';
+                $files = array_diff(scandir($knowledgeDir), array('..', '.', 'vectors.json', '.gitkeep'));
+                if (empty($files)):
+            ?>
+                <p style="grid-column:1/-1; opacity:0.5; font-size:0.75rem; text-align:center; padding:20px; border:1px dashed rgba(255,255,255,0.1); border-radius:15px;">
+                    Aucun document dans la base de connaissances.
+                </p>
+            <?php else: ?>
+                <?php foreach ($files as $file): ?>
+                    <div class="card-glass" style="padding:12px; display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.2); border-radius:12px; border: 1px solid rgba(255,255,255,0.05);">
+                        <div style="overflow:hidden; display:flex; align-items:center; gap:10px;">
+                            <span style="font-size:1.2rem;"><?= pathinfo($file, PATHINFO_EXTENSION) === 'pdf' ? '📕' : '📄' ?></span>
+                            <div style="overflow:hidden;">
+                                <div style="font-size:0.75rem; font-weight:700; white-space:nowrap; text-overflow:ellipsis; overflow:hidden;">
+                                    <?= htmlspecialchars($file) ?>
+                                </div>
+                                <div style="font-size:0.6rem; opacity:0.5;"><?= strtoupper(pathinfo($file, PATHINFO_EXTENSION)) ?></div>
+                            </div>
+                        </div>
+                        <a href="?delete_doc=<?= urlencode($file) ?>" style="color:#f87171; text-decoration:none; font-size:1.1rem; padding:0 5px; opacity:0.5;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.5" onclick="return confirm('Supprimer ce document ?')">&times;</a>
+                    </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </div>
+        
+        <div style="margin-top:20px; font-size:0.65rem; color:var(--text-dim); line-height:1.4; display:flex; gap:10px; align-items:flex-start;">
+            <div style="background:rgba(167, 139, 250, 0.2); padding:5px; border-radius:5px;">💡</div>
+            <div>
+                <strong>RAG Avancé (Hybrid V4)</strong> : Vos fichiers (PDF, TXT, MD) sont découpés en segments sémantiques avec chevauchement (Overlap) via le Gateway Python.
+                Le système utilise <code>nomic-embed-text</code> pour transformer vos connaissances en vecteurs mathématiques.
+            </div>
         </div>
     </div>
 </div>
 
+<!-- MODAL FOLDER PICKER -->
+<div id="folderPickerModal" class="modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(10px); z-index:9999; align-items:center; justify-content:center;">
+    <div class="bento-item" style="width:90%; max-width:700px; height:80vh; display:flex; flex-direction:column; padding:0; overflow:hidden; border:1px solid var(--primary);">
+        <div style="padding:20px; border-bottom:1px solid rgba(255,255,255,0.1); display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.02);">
+            <h3 style="margin:0; font-size:0.9rem; letter-spacing:1px; color:var(--primary);">EXPLORATEUR SYSTÈME</h3>
+            <button onclick="closeFolderPicker()" style="background:none; border:none; color:white; font-size:1.5rem; cursor:pointer; opacity:0.5;">&times;</button>
+        </div>
+        
+        <div id="pickerBreadcrumb" style="padding:10px 20px; font-size:0.7rem; color:var(--text-dim); background:rgba(0,0,0,0.2); border-bottom:1px solid rgba(255,255,255,0.05); display:flex; gap:5px; align-items:center;">
+            <!-- Breadcrumb JS -->
+        </div>
+
+        <div id="pickerDrives" style="padding:15px 20px; display:flex; gap:10px; background:rgba(0,0,0,0.1);">
+            <button onclick="navigatePicker('/c')" class="btn-drive">C:</button>
+            <button onclick="navigatePicker('/f')" class="btn-drive">F:</button>
+        </div>
+
+        <div id="pickerContent" style="flex:1; overflow-y:auto; padding:10px 0;">
+            <!-- Folder List JS -->
+        </div>
+
+        <div style="padding:20px; border-top:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.2); display:flex; justify-content:space-between; align-items:center;">
+            <div style="font-size:0.75rem; color:var(--text-dim);">
+                Séléection : <span id="currentSelectionText" style="color:white; font-family:monospace;">/</span>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <button onclick="closeFolderPicker()" style="background:rgba(255,255,255,0.1); color:white;">ANNULER</button>
+                <button onclick="confirmSelection()" style="background:var(--primary); color:white;">SÉLECTIONNER</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.modal-overlay { display: flex; animation: fadeIn 0.2s ease-out; }
+.btn-drive { background: rgba(59, 130, 246, 0.2); border: 1px solid rgba(59, 130, 246, 0.4); color: #60a5fa; padding: 5px 15px; border-radius: 6px; font-size: 0.7rem; cursor: pointer; transition: 0.2s; }
+.btn-drive:hover { background: rgba(59, 130, 246, 0.4); }
+.picker-item { display: flex; align-items: center; gap: 12px; padding: 10px 20px; cursor: pointer; transition: 0.1s; border-bottom: 1px solid rgba(255,255,255,0.02); }
+.picker-item:hover { background: rgba(255,255,255,0.05); }
+.picker-item svg { opacity: 0.5; color: var(--primary); }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+</style>
+
 <script>
+// -- Gestion de l'Explorateur de Dossiers --
+let currentPickerPath = '';
+
+function openFolderPicker() {
+    document.getElementById('folderPickerModal').style.display = 'flex';
+    navigatePicker('');
+}
+
+function closeFolderPicker() {
+    document.getElementById('folderPickerModal').style.display = 'none';
+}
+
+function navigatePicker(path) {
+    currentPickerPath = path;
+    const content = document.getElementById('pickerContent');
+    const breadcrumb = document.getElementById('pickerBreadcrumb');
+    const selection = document.getElementById('currentSelectionText');
+    
+    content.innerHTML = '<div style="padding:20px; opacity:0.5; font-size:0.8rem;">Chargement...</div>';
+    breadcrumb.innerHTML = '📂 ' + (path || '/');
+    selection.innerText = path || '/';
+
+    fetch('api_explorer.php?path=' + encodeURIComponent(path))
+        .then(res => res.json())
+        .then(data => {
+            if (!data.success) {
+                content.innerHTML = `<div style="padding:20px; color:#f87171; font-size:0.8rem;">Erreur : ${data.error}</div>`;
+                return;
+            }
+
+            let html = '';
+            
+            // Bouton Retour si on n'est pas à la racine
+            if (data.parent_path !== null) {
+                html += `
+                    <div class="picker-item" onclick="navigatePicker('${data.parent_path}')" style="opacity:0.6;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                        <span style="font-size:0.85rem;">... (Dossier parent)</span>
+                    </div>
+                `;
+            }
+
+            data.items.forEach(item => {
+                const subPath = (path === '' ? '' : path) + '/' + item.name;
+                html += `
+                    <div class="picker-item" ondblclick="navigatePicker('${subPath}')" onclick="selectPath('${subPath}')">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                        <span style="font-size:0.85rem;">${item.name}</span>
+                    </div>
+                `;
+            });
+
+            if (data.items.length === 0 && data.parent_path === null) {
+                html = '<div style="padding:20px; opacity:0.4; font-size:0.8rem;">Aucun disque détecté. Vérifiez votre montage Docker.</div>';
+            }
+
+            content.innerHTML = html;
+        });
+}
+
+function selectPath(path) {
+    currentPickerPath = path;
+    document.getElementById('currentSelectionText').innerText = path;
+}
+
+function confirmSelection() {
+    // Conversion du chemin Docker (/c/users...) vers Windows (C:/users...)
+    let winPath = currentPickerPath;
+    
+    // Pattern /c/something -> C:/something
+    const driveMatch = winPath.match(/^\/([a-z])\/(.*)$/i);
+    if (driveMatch) {
+        winPath = driveMatch[1].toUpperCase() + ':/' + driveMatch[2];
+    } else {
+        const singleDriveMatch = winPath.match(/^\/([a-z])$/i);
+        if (singleDriveMatch) {
+            winPath = singleDriveMatch[1].toUpperCase() + ':/';
+        }
+    }
+
+    document.getElementById('ollama_models_path').value = winPath;
+    closeFolderPicker();
+}
+
+// -- Gestion du Boost GPU (Ollama Natif Hôte) --
+function openNativeDiscovery() {
+    const modal = document.getElementById('nativeDiscoveryModal');
+    const list = document.getElementById('nativeModelsList');
+    const status = document.getElementById('nativeStatus');
+    
+    modal.style.display = 'flex';
+    list.innerHTML = '<div style="opacity:0.5; padding:20px; text-align:center;">Recherche de votre Ollama Windows...</div>';
+
+    // On passe par le Gateway (Proxy) pour éviter les erreurs CORS navigateur vers localhost:11434
+    fetch('http://' + window.location.hostname + ':8003/v1/native/models') // Port du Gateway
+        .then(res => res.json())
+        .then(data => {
+            if (!data.models || data.models.length === 0) {
+                list.innerHTML = `
+                    <div style="padding:20px; text-align:center;">
+                        <p style="color:#f87171;">Ollama non détecté sur votre PC.</p>
+                        <p style="font-size:0.7rem; opacity:0.6;">Vérifiez qu'Ollama pour Windows est lancé et réglé sur '0.0.0.0' si nécessaire.</p>
+                    </div>`;
+                status.innerText = "Non détecté";
+                return;
+            }
+
+            let html = '<div style="display:flex; flex-direction:column; gap:10px;">';
+            data.models.forEach(m => {
+                html += `
+                    <div class="picker-item" style="border: 1px solid rgba(245, 158, 11, 0.2); border-radius:10px;">
+                        <div style="flex:1;">
+                            <div style="font-weight:700; font-size:0.8rem;">${m.name}</div>
+                            <div style="font-size:0.6rem; opacity:0.5;">${m.details.parameter_size || 'N/A'} - GPU Opti</div>
+                        </div>
+                        <span style="font-size:0.55rem; background:#f59e0b; color:black; padding:2px 5px; border-radius:4px; font-weight:900;">PRÊT</span>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            list.innerHTML = html;
+            status.innerText = data.models.length + " modèles détectés";
+        })
+        .catch(err => {
+            list.innerHTML = '<div style="padding:20px; color:#f87171;">Erreur de connexion au Gateway.</div>';
+        });
+}
+
+function closeNativeDiscovery() {
+    document.getElementById('nativeDiscoveryModal').style.display = 'none';
+}
+
 // -- Gestion des Clés API (localStorage) --
 function updateProviderUI() {
     const provider = document.getElementById('active_provider').value;

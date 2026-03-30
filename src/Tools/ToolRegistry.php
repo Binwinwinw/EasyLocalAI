@@ -13,26 +13,21 @@ class ToolRegistry {
         return $this->tools;
     }
 
-    /**
-     * Génère la description des outils pour le System Prompt.
-     */
     public function getPromptDescription(): string {
         if (empty($this->tools)) return "";
 
-        $desc = "--- MODE AGENT ACTIF ---\n";
-        $desc .= "Tu as accès aux outils suivants pour interagir avec le système.\n";
-        $desc .= "RÈGLE D'OR : Utilise EXCLUSIVEMENT le format [TOOL: nom_outil(clé=\"valeur\")] ou [TOOL: nom_outil({\"clé\":\"valeur\"})].\n";
-        $desc .= "ATTENTION : Ne jamais utiliser 'list_directory' pour écrire un fichier. Utilise 'write_file' pour toute création/modification.\n";
-        $desc .= "CONTEXTE PROJET : Le coeur de l'application est dans 'src/App/'. Ne pas inventer de dossiers 'src/Core/' pour les classes applicatives.\n\n";
+        $desc = "--- CATALOGUE D'OUTILS DISPONIBLES ---\n";
+        $desc .= "Pour utiliser un outil, écris EXCLUSIVEMENT : <action>nom_outil(clé=\"valeur\")</action>.\n\n";
 
         foreach ($this->tools as $tool) {
-            $desc .= "🔧 Outil: " . $tool->getName() . "\n";
-            $desc .= "   Description: " . $tool->getDescription() . "\n";
-            $params = json_encode($tool->getParameters());
-            $desc .= "   Paramètres: $params\n\n";
+            $desc .= "🛠️ " . $tool->getName() . " : " . $tool->getDescription() . "\n";
+            $params = [];
+            foreach ($tool->getParameters() as $pName => $pDesc) {
+                $params[] = "$pName (ex: \"...\")";
+            }
+            $desc .= "   Usage: <action>" . $tool->getName() . "(" . implode(", ", $params) . ")</action>\n\n";
         }
 
-        $desc .= "Exemple correct: [TOOL: write_file(path=\"src/App/Test.php\", content=\"<?php ...\")]\n";
         return $desc;
     }
 

@@ -40,9 +40,35 @@ class Security {
     }
 
     /**
-     * Génère un jeton unique par page (Optionnel, non utilisé ici).
+     * Valide un fichier uploadé (Taille et Type Mime réel).
+     * @return string|bool True si OK, sinon un message d'erreur.
      */
-    public static function getCsrfTokenForPage($pageId) {
-        return hash_hmac('sha256', $pageId, self::getCsrfToken());
+    public static function validateUpload($file, $maxSizeMB = 5) {
+        if (!isset($file['tmp_name']) || empty($file['tmp_name'])) {
+            return "Fichier invalide.";
+        }
+
+        // 1. Taille
+        $maxBytes = $maxSizeMB * 1024 * 1024;
+        if ($file['size'] > $maxBytes) {
+            return "Fichier trop volumineux (max {$maxSizeMB} Mo).";
+        }
+
+        // 2. Type MIME réel (via finfo)
+        $finfo = new \finfo(FILEINFO_MIME_TYPE);
+        $mime = $finfo->file($file['tmp_name']);
+        
+        $allowed = [
+            'text/plain',
+            'application/pdf',
+            'text/markdown',
+            'application/octet-stream' // Parfois les .md sont vus comme ça
+        ];
+
+        if (!in_array($mime, $allowed)) {
+            return "Format de fichier non autorisé ({$mime}). .txt, .pdf, .md uniquement.";
+        }
+
+        return true;
     }
 }

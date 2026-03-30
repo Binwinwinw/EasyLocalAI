@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   ollama:
     image: ollama/ollama
@@ -7,8 +5,14 @@ services:
     ports:
       - "11436:11434"
     volumes:
-      - ollama_data:/root/.ollama
+      - ${OLLAMA_MODELS_PATH:-ollama_data}:/root/.ollama
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+        reservations:
+          memory: 4G
 
   cortex_gateway:
     build: ./cortex_gateway
@@ -21,23 +25,37 @@ services:
       - OLLAMA_HOST=http://ollama_upstream:11434
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - GROQ_API_KEY=${GROQ_API_KEY}
+      - CORTEX_API_KEY=${CORTEX_API_KEY}
     restart: unless-stopped
     depends_on:
       - ollama
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 1G
 
   php_app:
     build: .
+    container_name: php_app_core
     ports:
       - "8002:80"
     depends_on:
       - ollama
       - cortex_gateway
     environment:
-      - OLLAMA_HOST=http://ollama:11434
+      - OLLAMA_INTERNAL_URL=http://ollama:11434
     volumes:
       - .:/var/www/html
       - ./config:/var/www/html/config
       - ./knowledge:/var/www/html/knowledge
-
-volumes:
-  ollama_data:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - C:/:/host/c:ro
+      - F:/:/host/f:ro
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
