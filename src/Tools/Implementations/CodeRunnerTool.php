@@ -8,10 +8,10 @@ class CodeRunnerTool implements ToolInterface {
     private $tmpFile;
 
     public function __construct() {
-        $this->tmpFile = __DIR__ . '/../../../../public/tmp/sandbox.php';
+        $this->tmpFile = '/tmp/agent_sandbox.php';
         $dir = dirname($this->tmpFile);
         if (!is_dir($dir)) {
-            mkdir($dir, 0755, true);
+            mkdir($dir, 0777, true);
         }
     }
 

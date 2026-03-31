@@ -11,7 +11,7 @@ class SearchKnowledgeTool implements ToolInterface {
     }
 
     public function getDescription(): string {
-        return "Recherche des informations spécifiques dans la base de connaissance (RAG) du projet. Très utile pour des questions techniques ou métier.";
+        return "Recherche des informations spécifiques dans la base de connaissance (RAG) du projet. À utiliser UNIQUEMENT pour des faits techniques ou métier présents dans les documents, et JAMAIS pour ton identité ou ton rôle.";
     }
 
     public function getParameters(): array {

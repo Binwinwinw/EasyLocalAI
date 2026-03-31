@@ -7,5 +7,5 @@ use EasyLocalAI\Core\Container;
 $auth = Container::get('auth');
 $auth->logout();
 
-header("Location: login.php");
+header("Location: index.php");
 exit;

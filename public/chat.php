@@ -12,7 +12,7 @@ $ollama = Container::get('ollama');
 
 $app_name = $config->getAppName();
 $activeProvider = $config->get('active_provider', 'ollama');
-$upload_msg = $rag->handleUpload();
+// $upload_msg est désormais géré en AJAX pour l'Expert Edition
 
 // History clearing
 if (isset($_POST['action']) && $_POST['action'] === "clear") {
@@ -70,14 +70,18 @@ include __DIR__ . '/includes/header.php';
 
     <div style="display:flex; justify-content: space-between; align-items: center; margin-top: 25px; padding: 0 10px;">
         <div style="display:flex; gap: 20px;">
-            <form method="post" enctype="multipart/form-data">
-                <input type="hidden" name="csrf_token" value="<?= \EasyLocalAI\Core\Security::getCsrfToken() ?>">
-                <input type="file" name="knowledge_file" id="kFile" style="display:none;" onchange="this.form.submit()">
-                <label for="kFile" style="cursor:pointer; font-size: 0.75rem; color: var(--text-dim); display:flex; align-items:center; gap:8px; opacity:0.7; transition:0.3s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.7">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                    Contextualiser (.pdf, .txt, .md)
+            <div id="uploadStatus" style="display:none; font-size: 0.7rem; background: rgba(16, 185, 129, 0.1); color: #10b981; padding: 5px 12px; border-radius: 8px; border: 1px solid rgba(16, 185, 129, 0.2); align-items: center; gap: 8px;">
+                <span id="uploadMsg">Document indexé !</span>
+                <button type="button" onclick="this.parentElement.style.display='none'" style="background:none; border:none; color:inherit; cursor:pointer; padding:0; font-size:1rem; line-height:1;">&times;</button>
+            </div>
+
+            <form id="uploadForm" enctype="multipart/form-data" style="display: flex; align-items: center;">
+                <input type="hidden" name="csrf_token" id="upload_csrf" value="<?= \EasyLocalAI\Core\Security::getCsrfToken() ?>">
+                <input type="file" name="knowledge_file" id="kFile" style="display:none;" onchange="uploadFile()">
+                <label for="kFile" id="uploadLabel" style="cursor:pointer; font-size: 0.75rem; color: var(--text-dim); display:flex; align-items:center; gap:8px; opacity:0.7; transition:0.3s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.7">
+                    <svg id="uploadIcon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    <span id="uploadText">Contextualiser (.pdf, .txt, .md)</span>
                 </label>
-                <?php if (!empty($upload_msg)): ?><span style="font-size: 0.7rem; color: #10b981; margin-left:10px;"><?= $upload_msg ?></span><?php endif; ?>
             </form>
         </div>
         
@@ -88,56 +92,6 @@ include __DIR__ . '/includes/header.php';
     </div>
 </div>
 
-<!-- Section Mémoire & Historique (Grid) -->
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 40px;">
-    <div class="card-glass" style="padding: 25px; background: var(--glass); border: 1px solid var(--border); border-radius: 20px;">
-        <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h3 style="margin:0; font-size: 0.9rem; letter-spacing: 0.05em; color: var(--primary);">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px; vertical-align:middle;"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
-                MÉMOIRE VIVE
-            </h3>
-            <button onclick="toggleMemory()" style="background:none; padding:5px; border-radius:8px; opacity:0.5;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.78 1.35a2 2 0 0 0 .73 2.73l.15.08a2 2 0 0 1 1 1.73v.56a2 2 0 0 1-1 1.73l-.15.08a2 2 0 0 0-.73 2.73l.78 1.35a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 1-1.73v.18a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.78-1.35a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.73v-.56a2 2 0 0 1 1-1.73l.15-.08a2 2 0 0 0 .73-2.73l-.78-1.35a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-            </button>
-        </div>
-        <div id="memoryList" style="font-size: 0.85rem; color: var(--text-dim);">
-            <?php if (empty($memory->getFacts())): ?>
-                <p style="font-style: italic; opacity:0.5;">Aucun souvenir persistant détecté.</p>
-            <?php else: ?>
-                <ul style="margin: 0; padding-left: 18px; line-height:1.7;">
-                    <?php foreach ($memory->getFacts() as $idx => $fact): ?>
-                        <li><?= htmlspecialchars($fact) ?></li>
-                    <?php endforeach; ?>
-                </ul>
-            <?php endif; ?>
-        </div>
-        <div id="memoryControls" style="display:none; margin-top:15px; animation: fadeIn 0.3s;">
-            <div style="display:flex; gap:10px;">
-                <input type="text" id="newFact" placeholder="Ajouter un fait..." style="background:rgba(0,0,0,0.2); border-radius:10px; font-size:0.8rem;">
-                <button onclick="addFact()" style="padding:10px 15px;">OK</button>
-            </div>
-        </div>
-    </div>
-
-    <div class="card-glass" style="padding: 25px; background: var(--glass); border: 1px solid var(--border); border-radius: 20px;">
-        <h3 style="margin:0 0 20px 0; font-size: 0.9rem; letter-spacing: 0.05em; color: var(--text);">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px; vertical-align:middle;"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
-            HISTORIQUE
-        </h3>
-        <div id="historyList" style="font-size: 0.85rem; color: var(--text-dim);">
-            <?php 
-            $history = array_slice(Conversation::getHistory(), -2);
-            if (empty($history)): ?>
-                <p style="font-style: italic; opacity:0.5;">Début de la transmission...</p>
-            <?php else: ?>
-                <?php foreach (array_reverse($history) as $item): ?>
-                    <div style="margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 10px;">
-                        <div style="font-weight:700; color:var(--text); font-size:0.8rem; margin-bottom:3px;">USER: <?= htmlspecialchars($item['q']) ?></div>
-                        <div style="opacity:0.8; font-size:0.8rem;"><?= mb_strimwidth(htmlspecialchars($item['a']), 0, 80, "...") ?></div>
-                    </div>
-                <?php endforeach; ?>
-            <?php endif; ?>
-        </div>
     </div>
 </div>
 
@@ -163,6 +117,50 @@ include __DIR__ . '/includes/header.php';
             body: `action=add&fact=${encodeURIComponent(fact)}`
         });
         location.reload();
+    };
+
+    window.uploadFile = async () => {
+        const fileInput = document.getElementById('kFile');
+        const label = document.getElementById('uploadLabel');
+        const icon = document.getElementById('uploadIcon');
+        const text = document.getElementById('uploadText');
+        const status = document.getElementById('uploadStatus');
+        const msg = document.getElementById('uploadMsg');
+        const csrf = document.getElementById('upload_csrf').value;
+
+        if (!fileInput.files.length) return;
+
+        const formData = new FormData();
+        formData.append('knowledge_file', fileInput.files[0]);
+        formData.append('csrf_token', csrf);
+
+        // UI Feedback
+        text.innerText = "Indexation...";
+        label.style.color = "var(--primary)";
+        icon.style.animation = "pulse-glow 1s infinite";
+
+        try {
+            const response = await fetch('api_rag.php', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                status.style.display = "flex";
+                msg.innerText = `Prêt ! ${data.count} segments indexés (${data.filename})`;
+                text.innerText = "Ajouter un autre document";
+            } else {
+                alert("Erreur : " + data.message);
+                text.innerText = "Réessayer";
+            }
+        } catch (e) {
+            alert("Erreur réseau lors de l'indexation.");
+            text.innerText = "Erreur";
+        } finally {
+            icon.style.animation = "none";
+            label.style.color = "";
+        }
     };
 
     form?.addEventListener('submit', async (e) => {

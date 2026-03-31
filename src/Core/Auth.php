@@ -50,8 +50,10 @@ class Auth {
         if (PHP_SAPI === 'cli') return; // Skip in CLI
 
         $current_page = basename($_SERVER['PHP_SELF']);
-        if (!$this->isLoggedIn() && $current_page !== 'login.php' && $current_page !== 'setup.php') {
-            header("Location: login.php");
+        $whitelist = ['login.php', 'index.php']; 
+        
+        if (!$this->isLoggedIn() && !in_array($current_page, $whitelist)) {
+            header("Location: index.php");
             exit;
         }
     }

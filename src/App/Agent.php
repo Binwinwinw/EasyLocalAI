@@ -12,11 +12,15 @@ use EasyLocalAI\Tools\ToolRegistry;
 class Agent {
     private $llm;
     private $registry;
+    private $config;
+    private $memory;
     private $maxIterations = 5;
 
-    public function __construct(LlmInterface $llm, ToolRegistry $registry) {
+    public function __construct(LlmInterface $llm, ToolRegistry $registry, \EasyLocalAI\Core\Config $config, \EasyLocalAI\App\Memory $memory) {
         $this->llm = $llm;
         $this->registry = $registry;
+        $this->config = $config;
+        $this->memory = $memory;
     }
 
     /**
@@ -72,34 +76,61 @@ class Agent {
                 continue; 
             }
 
-            // Si aucune action n'est détectée ou si <answer> est présent
+            // 4. Détection de la réponse finale <answer>
             if (preg_match('/<answer>(.*?)<\/answer>/s', $response, $answerMatch)) {
                 return trim($answerMatch[1]);
             }
 
-            // Fail-safe : Si pas de balises mais du texte, on considère que c'est la réponse
-            return $response;
+            // 5. Fail-safe : Si l'IA n'a plus d'action à proposer et qu'elle n'a pas utilisé <answer>, 
+            // on vérifie si elle a quand même donné une réponse textuelle hors balises.
+            $cleanResponse = preg_replace('/<(thought|action|observation)>.*?<\/\1>/s', '', $response);
+            $cleanResponse = trim(strip_tags($cleanResponse));
+
+            if (!empty($cleanResponse) && !str_contains($response, '<action>')) {
+                return $cleanResponse;
+            }
         }
 
-        return "Désolé, j'ai atteint ma limite de réflexion (5 cycles) sans trouver de solution définitive.";
+        return "Désolé, j'ai atteint ma limite de réflexion (5 cycles). Mon analyse s'arrête ici : " . ($cleanResponse ?? "Pas de réponse.");
     }
 
     /**
-     * Prépare le prompt système enrichi avec les outils.
+     * Prépare le prompt système enrichi avec les outils, le Persona JSON et la Mémoire Vive.
      */
     private function prepareInitialMessages(array $history): array {
-        $toolsDescription = $this->registry->getPromptDescription();
-        $baseSystemPrompt = $this->llm->getSystemPrompt();
-        
-        $agentInstructions = "\n\n--- INSTRUCTIONS AGENT (MODE RÉFLEXION) ---\n" .
-        "Tu es un Agent Expert capable d'utiliser des outils pour répondre précisément.\n" .
-        "Pour chaque étape, tu DOIS structurer ta réponse ainsi :\n" .
-        "1. <thought>Ta réflexion interne sur ce que tu vas faire.</thought>\n" .
-        "2. <action>nom_outil(args)</action> (si tu as besoin d'une information externe).\n" .
-        "3. <answer>Ta réponse finale une fois que tu as toutes les informations.</answer>\n\n" .
-        "Si tu utilises un outil, attends 'OBSERVATION' avant de conclure.\n";
+        // 1. Chargement du Persona JSON
+        $persona = $this->config->get('persona');
+        $expertName = $persona['name'] ?? 'EasyLocalAI';
+        $expertRole = $persona['role'] ?? 'Assistant IA';
+        $expertTone = $persona['tone'] ?? 'Professionnel';
+        $expertInstructions = $persona['instructions'] ?? [];
 
-        $this->llm->setSystemPrompt($baseSystemPrompt . $agentInstructions . $toolsDescription);
+        $personaPrompt = "--- IDENTITÉ DE L'AGENT ---\n" .
+                         "NOM : $expertName\n" .
+                         "RÔLE : $expertRole\n" .
+                         "TON : $expertTone\n\n" .
+                         "--- RÈGLES DE CONDUITE ---\n";
+        
+        foreach ($expertInstructions as $rule) {
+            $personaPrompt .= "- $rule\n";
+        }
+
+        // 2. Injection de la Mémoire Vive (Facts)
+        $memoryString = $this->memory->getContextString();
+
+        // 3. Description des outils
+        $toolsDescription = $this->registry->getPromptDescription();
+        
+        $agentInstructions = "\n\n--- PROTOCOLE DE RÉFLEXION AGENT ---\n" .
+        "Tu es une IA agentique locale. Pour chaque message :\n" .
+        "1. <thought>Ta réflexion courte. SI LA QUESTION EST SUR TON IDENTITÉ, RÉPONDS DIRECTEMENT SANS OUTIL.</thought>\n" .
+        "2. <action>nom_outil(clé=\"valeur\")</action> (Seulement si tu as BESOIN d'une info externe).\n" .
+        "3. <answer>Ta réponse finale concise.</answer>\n\n" .
+        "INTERDICTION : Ne cherche pas dans les fichiers ou internet pour ton nom ou ton rôle.\n";
+
+        $finalSystemPrompt = $personaPrompt . $memoryString . $agentInstructions . $toolsDescription;
+        
+        $this->llm->setSystemPrompt($finalSystemPrompt);
         return $history;
     }
 

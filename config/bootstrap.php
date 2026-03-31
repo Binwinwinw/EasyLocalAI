@@ -50,7 +50,13 @@ use EasyLocalAI\App\Agent;
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
+use EasyLocalAI\Core\DockerManager;
+
 // --- Enregistrement des Services (Conteneur DI) ---
+
+Container::register('docker', function() {
+    return new DockerManager();
+});
 
 Container::register('config', function() {
     return new Config();
@@ -76,7 +82,8 @@ Container::register('memory', function() {
  * Service Ollama (Gestion Locale)
  */
 Container::register('ollama', function() {
-    return new Ollama(Container::get('config'), Container::get('memory')->getContextString());
+    $apiKey = Container::get('env')->get('CORTEX_API_KEY', '');
+    return new Ollama(Container::get('config'), Container::get('memory')->getContextString(), $apiKey);
 });
 
 /**
@@ -140,7 +147,12 @@ Container::register('tool_registry', function() {
 });
 
 Container::register('agent', function() {
-    return new Agent(Container::get('llm'), Container::get('tool_registry'));
+    return new Agent(
+        Container::get('llm'), 
+        Container::get('tool_registry'),
+        Container::get('config'),
+        Container::get('memory')
+    );
 });
 
 // --- Initialisation de la Sécurité ---

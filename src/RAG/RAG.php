@@ -82,11 +82,16 @@ class RAG
         $targetFile = $this->knowledgeDir . basename($file['name']);
         move_uploaded_file($file['tmp_name'], $targetFile);
 
-        return "Doc indexé : " . count($data['chunks']) . " segments créés.";
+        return json_encode([
+            'success' => true,
+            'message' => 'Document indexé avec succès.',
+            'count' => count($data['chunks']),
+            'filename' => $file['name']
+        ]);
     }
 
     /**
-     * Récupère le contexte sémantique le plus proche.
+     * Récupère le contexte sémantique le plus proche avec système de citation.
      */
     public function getContext(string $prompt): string
     {
@@ -94,21 +99,31 @@ class RAG
         $queryVector = $this->embedder->embed($prompt);
         if (empty($queryVector)) return "";
 
-        // 2. Recherche sémantique
-        $matches = $this->vectorStore->search($queryVector, 4);
+        // 2. Recherche sémantique (Top 5 segments)
+        $matches = $this->vectorStore->search($queryVector, 5);
         if (empty($matches)) return "";
 
         $context = "";
+        $sourcesUsed = [];
+        
         foreach ($matches as $match) {
-            // Seuil de similarité pour éviter le bruit (0.4 est un bon compromis)
-            if ($match['similarity'] < 0.4) continue;
+            // Seuil de similarité (Expert: 0.45 pour éviter le bruit)
+            if ($match['similarity'] < 0.45) continue;
 
-            $source = $match['metadata']['source'] ?? 'Inconnu';
-            $context .= "\n--- Extrait de : $source (Pertinence: " . round($match['similarity'] * 100, 1) . "%) ---\n" . $match['text'] . "\n";
+            $source = $match['metadata']['source'] ?? 'Document inconnu';
+            $sourcesUsed[$source] = true;
+            
+            $context .= "\n[SOURCE: $source | PERTINENCE: " . round($match['similarity'] * 100, 1) . "%]\n";
+            $context .= $match['text'] . "\n";
         }
 
         if (empty($context)) return "";
 
-        return "CONTEXTE SÉMANTIQUE DÉTECTÉ :\n" . $context . "\n(Utilise ces informations pour répondre de manière précise.)";
+        $citationList = implode(", ", array_keys($sourcesUsed));
+
+        return "--- CONNAISSANCES EXTRAITES (Sources: $citationList) ---\n" . 
+               $context . 
+               "\n--- FIN DU CONTEXTE ---\n" .
+               "RÈGLE : Utilise UNIQUEMENT les sources ci-dessus. Si l'information n'y est pas, dis que tu ne sais pas selon tes documents.";
     }
 }

@@ -32,9 +32,15 @@ class ToolRegistry {
     }
 
     public function executeTool(string $name, array $args): string {
-        if (!isset($this->tools[$name])) {
-            return "Erreur: Outil '$name' non trouvé.";
+        $nameLower = strtolower($name);
+        
+        // Recherche insensible à la casse
+        foreach ($this->tools as $toolName => $tool) {
+            if (strtolower($toolName) === $nameLower) {
+                return $tool->execute($args);
+            }
         }
-        return $this->tools[$name]->execute($args);
+
+        return "Erreur: Outil '$name' non trouvé. Outils disponibles : " . implode(", ", array_keys($this->tools));
     }
 }

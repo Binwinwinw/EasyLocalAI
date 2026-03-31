@@ -9,23 +9,21 @@ class Ollama implements LlmInterface
     private string $ollamaBase; // Racine pure d'Ollama (ex: http://ollama:11434)
     private string $model;
     private string $systemPrompt;
+    private string $apiKey = "";
     private string $memoryContext = "";
 
-    public function __construct(Config $config, string $memoryContext = "")
+    public function __construct(Config $config, string $memoryContext = "", string $apiKey = "")
     {
+        $this->apiKey = $apiKey;
         $url = rtrim($config->get('api_base_url'), '/');
         
         // Si l'URL contient déjà 'chat/completions', c'est probablement le Gateway
+        // On utilise l'URL interne pour l'administration (list/pull)
+        $this->ollamaBase = "http://ollama:11434";
+
         if (strpos($url, 'chat/completions') !== false) {
             $this->baseUrl = $url;
-            // Pour l'administration, on tente d'extraire la base, mais on garde en tête 
-            // que c'est le Gateway. Un réglage 'ollama_host' dédié serait idéal.
-            $parsedUrl = parse_url($url);
-            $this->ollamaBase = ($parsedUrl['scheme'] ?? 'http') . '://' . ($parsedUrl['host'] ?? 'localhost') . (isset($parsedUrl['port']) ? ':' . $parsedUrl['port'] : '');
         } else {
-            // Comportement standard Ollama
-            $parsedUrl = parse_url($url);
-            $this->ollamaBase = ($parsedUrl['scheme'] ?? 'http') . '://' . ($parsedUrl['host'] ?? 'localhost') . (isset($parsedUrl['port']) ? ':' . $parsedUrl['port'] : '');
             $this->baseUrl = $this->ollamaBase . '/v1/chat/completions';
         }
 
@@ -61,7 +59,7 @@ class Ollama implements LlmInterface
                 'messages' => $messages,
                 'stream'   => false,
             ]),
-            CURLOPT_HTTPHEADER     => ["Content-Type: application/json"],
+            CURLOPT_HTTPHEADER     => $this->getHeaders(),
             CURLOPT_CONNECTTIMEOUT => 10,
             CURLOPT_TIMEOUT        => 300,
         ]);
@@ -92,7 +90,7 @@ class Ollama implements LlmInterface
                 'messages' => $messages,
                 'stream'   => true,
             ]),
-            CURLOPT_HTTPHEADER     => ["Content-Type: application/json"],
+            CURLOPT_HTTPHEADER     => $this->getHeaders(),
             CURLOPT_WRITEFUNCTION  => function($ch, $data) {
                 // Ollama/Gateway peut envoyer plusieurs lignes JSON dans un seul chunk
                 $lines = explode("\n", $data);
@@ -195,5 +193,14 @@ class Ollama implements LlmInterface
 
         $messages[] = ["role" => "user", "content" => $prompt];
         return $messages;
+    }
+
+    private function getHeaders(): array
+    {
+        $headers = ["Content-Type: application/json"];
+        if (!empty($this->apiKey)) {
+            $headers[] = "X-Cortex-Token: " . $this->apiKey;
+        }
+        return $headers;
     }
 }

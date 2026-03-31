@@ -131,16 +131,34 @@ async def get_native_models():
     return {"models": []}
 
 def chunk_text(text: str, chunk_size: int = 1000, overlap: int = 200) -> List[str]:
-    """Split text into chunks with overlap for better semantic context."""
+    """Smart semantic chunking with overlap based on double newlines and sentences."""
     if len(text) <= chunk_size:
         return [text]
     
+    # Split by paragraphs first (expert precision)
+    paragraphs = text.split('\n\n')
     chunks = []
-    start = 0
-    while start < len(text):
-        end = start + chunk_size
-        chunks.append(text[start:end])
-        start += (chunk_size - overlap)
+    current_chunk = ""
+    
+    for p in paragraphs:
+        if len(current_chunk) + len(p) < chunk_size:
+            current_chunk += p + "\n\n"
+        else:
+            if current_chunk:
+                chunks.append(current_chunk.strip())
+            
+            # Start new chunk with overlap from the end of the previous
+            overlap_text = current_chunk[-overlap:] if len(current_chunk) > overlap else ""
+            current_chunk = overlap_text + p + "\n\n"
+            
+            # Handle exceptionally long paragraphs by splitting them further
+            while len(current_chunk) > chunk_size:
+                chunks.append(current_chunk[:chunk_size].strip())
+                current_chunk = current_chunk[chunk_size-overlap:]
+
+    if current_chunk:
+        chunks.append(current_chunk.strip())
+        
     return chunks
 
 @app.post("/v1/rag/ingest")

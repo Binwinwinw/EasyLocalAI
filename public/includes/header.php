@@ -6,8 +6,8 @@
     <title><?= htmlspecialchars($app_name ?? 'EasyLocalAI') ?> | Intelligence Locale</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="index.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="index.css?v=4.2">
     <script>
         // Le thème doit être appliqué le plus tôt possible pour éviter le flash blanc (FOUC)
         (function() {
@@ -43,11 +43,48 @@
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                     Chat Agent
                 </a>
-                <a href="setup.php" class="<?= basename($_SERVER['PHP_SELF']) == 'setup.php' ? 'active' : '' ?>">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-                    Configuration
-                </a>
+
+                <div class="nav-group <?= basename($_SERVER['PHP_SELF']) == 'setup.php' ? 'open active' : '' ?>">
+                    <a href="setup.php" onclick="toggleAccordion(event)" class="nav-toggle">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                        <span>Configuration</span>
+                        <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-left: auto; transition: 0.3s;"><polyline points="6 9 12 15 18 9"/></svg>
+                    </a>
+                    <div class="sub-nav">
+                        <?php 
+                            $currentTab = $_GET['tab'] ?? 'general';
+                        ?>
+                        <a href="setup.php?tab=general" class="<?= ($currentTab === 'general') ? 'active' : '' ?>">Général</a>
+                        <a href="setup.php?tab=engines" class="<?= ($currentTab === 'engines') ? 'active' : '' ?>">Moteurs IA</a>
+                        <a href="setup.php?tab=memory" class="<?= ($currentTab === 'memory') ? 'active' : '' ?>">Mémoire RAG</a>
+                        <a href="setup.php?tab=system" class="<?= ($currentTab === 'system') ? 'active' : '' ?>">Système</a>
+                    </div>
+                </div>
             </nav>
+
+            <script>
+            function toggleAccordion(e) {
+                // Si on clique sur le lien principal mais qu'on veut juste ouvrir l'accordéon sans naviguer ?
+                // Non, on veut naviguer vers setup.php (général) mais aussi ouvrir.
+                const group = e.currentTarget.parentElement;
+                const isOpen = group.classList.contains('open');
+                
+                // Si on est déjà sur setup.php, on bascule juste l'ouverture
+                if (window.location.pathname.includes('setup.php')) {
+                    // e.preventDefault(); // On ne prevent pas pour allow setup.php?tab=general
+                    group.classList.toggle('open');
+                    localStorage.setItem('sidebar_config_open', !isOpen);
+                }
+            }
+            
+            // Persistance de l'état
+            document.addEventListener('DOMContentLoaded', () => {
+                if (window.location.pathname.includes('setup.php')) {
+                    const group = document.querySelector('.nav-group');
+                    if (group) group.classList.add('open');
+                }
+            });
+            </script>
 
             <div class="sidebar-footer" style="margin-top: auto; padding-top: 20px; border-top: 1px solid var(--border);">
                 <div class="system-monitor" style="background: var(--glass); border-radius: 12px; padding: 15px; font-size: 0.75rem;">

@@ -21,6 +21,16 @@ class Config
             'model_name' => 'llama3.2',
             'api_base_url' => 'http://ollama:11434/v1/chat/completions',
             'system_prompt' => 'Tu es un assistant IA polyvalent.',
+            'persona' => [
+                'name' => 'EasyLocalAI',
+                'role' => 'Assistant de recherche souverain',
+                'tone' => 'Professionnel et concis',
+                'instructions' => [
+                    "Réponds toujours avec honnêteté.",
+                    "Indique tes sources si possible.",
+                    "Utilise le Markdown pour la clarté."
+                ]
+            ],
             'setup_completed' => false,
         ];
 

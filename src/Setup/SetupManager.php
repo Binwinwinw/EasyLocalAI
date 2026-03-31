@@ -49,7 +49,25 @@ class SetupManager
             die("Erreur de sécurité (CSRF)");
         }
 
-        // Sauvegarde de la configuration de base
+        // Sauvegarde depuis le Control Center (Unified)
+        if ($_POST['action'] === 'setup') {
+            $name = Security::sanitize($_POST['app_name'] ?? 'EasyLocalAI');
+            $personaJson = $_POST['persona_json'] ?? '';
+            
+            $this->config->set('app_name', $name);
+            
+            $persona = json_decode($personaJson, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($persona)) {
+                $this->config->set('persona', $persona);
+                // On met à jour aussi le vieux system_prompt pour la compatibilité LLM directe si besoin
+                $this->config->set('system_prompt', $personaJson);
+            }
+            
+            $this->config->set('setup_completed', true);
+            return $this->config->save();
+        }
+
+        // Sauvegarde initiale (Legacy Setup)
         if ($_POST['action'] === 'setup_save') {
             $name = Security::sanitize($_POST['app_name_input'] ?? 'EasyLocalAI');
             $profile = Security::sanitize($_POST['profile_choice'] ?? 'general');
