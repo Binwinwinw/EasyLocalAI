@@ -1,0 +1,17 @@
+# EasyLocalAI - Security Shield (Béton Armé - Apache 2.4+)
+
+# 1. Empêcher le listing des répertoires
+Options -Indexes
+
+# 2. Protéger les fichiers de configuration et d'environnement
+<FilesMatch "^\.env|settings\.json|composer\.json|composer\.lock$|database\.sqlite$">
+    Require all denied
+</FilesMatch>
+
+# 3. Protéger les dossiers sensibles (Via FilesMatch car Directory est interdit en .htaccess)
+# Note: Bloque l'accès direct aux fichiers dans ces dossiers depuis le web
+RewriteEngine On
+RewriteRule ^(src|config|knowledge|tmp|vendor)/ - [F,L]
+
+# 4. Autoriser seulement les scripts publics nécessaires
+# (L'accès aux fichiers .php à la racine reste autorisé pour l'exécution)

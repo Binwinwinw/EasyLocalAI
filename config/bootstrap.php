@@ -44,6 +44,8 @@ use EasyLocalAI\Tools\Implementations\DirectoryListTool;
 use EasyLocalAI\Tools\Implementations\SearchKnowledgeTool;
 use EasyLocalAI\Tools\Implementations\FileWriteTool;
 use EasyLocalAI\Tools\Implementations\CodeRunnerTool;
+use EasyLocalAI\Tools\Implementations\PythonExecuteTool;
+use EasyLocalAI\App\ToolExecutor;
 use EasyLocalAI\App\Agent;
 
 // Force Error Reporting in dev
@@ -98,7 +100,7 @@ Container::register('llm', function() {
         return Container::get('ollama');
     } else {
         $defaults = [
-            'cortex'  => ['url' => 'http://cortex_gateway:8000/v1/chat/completions', 'model' => 'cortex'],
+            'cortex'  => ['url' => Container::get('env')->get('CORTEX_GATEWAY_URL', 'http://127.0.0.1:8003') . '/v1/chat/completions', 'model' => 'cortex'],
             'groq'    => ['url' => 'https://api.groq.com/openai/v1/chat/completions', 'model' => 'llama-3.3-70b-versatile'],
             'openai'  => ['url' => 'https://api.openai.com/v1/chat/completions', 'model' => 'gpt-4o'],
             'minimax' => ['url' => 'https://api.minimax.io/v1/chat/completions', 'model' => 'minimax-m2.7']
@@ -132,6 +134,10 @@ Container::register('setup', function() {
     return new SetupManager(Container::get('config'));
 });
 
+Container::register('tool_executor', function() {
+    return new ToolExecutor('python', 30.0);
+});
+
 // --- Phase 2: AI Agency ---
 
 Container::register('tool_registry', function() {
@@ -143,6 +149,7 @@ Container::register('tool_registry', function() {
     $registry->register(new SearchKnowledgeTool());
     $registry->register(new FileWriteTool(Container::get('rag')));
     $registry->register(new CodeRunnerTool());
+    $registry->register(new PythonExecuteTool(Container::get('tool_executor')));
     return $registry;
 });
 

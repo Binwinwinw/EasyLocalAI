@@ -12,9 +12,12 @@ $env    = Container::get('env');
 
 // Handle Model Actions (Local Ollama)
 if (isset($_GET['set_default'])) {
+    if (!Security::checkCsrf($_GET['csrf_token'] ?? '')) {
+        die("Erreur de sécurité CSRF.");
+    }
     $modelName = Security::sanitize($_GET['set_default']);
     $config->set('model_name', $modelName);
-    $config->set('active_provider', 'ollama'); // On repasse en ollama si on choisit un modèle local
+    $config->set('active_provider', 'ollama');
     $config->save();
     header("Location: setup.php?tab=engines&updated=1");
     exit;
@@ -22,13 +25,15 @@ if (isset($_GET['set_default'])) {
 
 // Handle Cloud Provider Change
 if (isset($_POST['action']) && $_POST['action'] === 'set_provider') {
+    if (!Security::checkCsrf($_POST['csrf_token'] ?? '')) {
+        die("Erreur de sécurité CSRF.");
+    }
     $provider = Security::sanitize($_POST['active_provider']);
     $config->set('active_provider', $provider);
     $config->save();
     
-    // On met en session la clé API reçue (si présente) pour le flux stream.php actuel
     if (isset($_POST['api_key'])) {
-        $_SESSION["cloud_{$provider}_api_key"] = $_POST['api_key'];
+        $_SESSION["cloud_{$provider}_api_key"] = Security::sanitize($_POST['api_key']);
     }
     
     header("Location: setup.php?tab=engines&updated_provider=1");
@@ -36,6 +41,9 @@ if (isset($_POST['action']) && $_POST['action'] === 'set_provider') {
 }
 
 if (isset($_GET['delete_model'])) {
+    if (!Security::checkCsrf($_GET['csrf_token'] ?? '')) {
+        die("Erreur de sécurité CSRF.");
+    }
     $modelToDelete = Security::sanitize($_GET['delete_model']);
     $currentModel = $config->get('model_name', 'llama3.2');
     if ($modelToDelete !== $currentModel && $modelToDelete !== $currentModel.":latest") {
@@ -47,14 +55,20 @@ if (isset($_GET['delete_model'])) {
 
 // Action : Réinitialiser la base vectorielle
 if (isset($_POST['action']) && $_POST['action'] === 'clear_vectors') {
-    Container::get('vectorStore')->clear();
+    if (!Security::checkCsrf($_POST['csrf_token'] ?? '')) {
+        die("Erreur de sécurité CSRF.");
+    }
+    Container::get('vector_store')->clear();
     header("Location: setup.php?tab=memory&vectors_cleared=1");
     exit;
 }
 
 // Action : Supprimer un document physique
 if (isset($_GET['delete_doc'])) {
-    $docName = basename($_GET['delete_doc']);
+    if (!Security::checkCsrf($_GET['csrf_token'] ?? '')) {
+        die("Erreur de sécurité CSRF.");
+    }
+    $docName = basename(Security::sanitize($_GET['delete_doc']));
     $docPath = __DIR__ . '/../knowledge/' . $docName;
     if (file_exists($docPath)) unlink($docPath);
     header("Location: setup.php?tab=memory&doc_deleted=1");
@@ -68,16 +82,18 @@ if ($setup->handleForm()) {
 
 // Handle Infrastructure Change (Ollama Models Path)
 if (isset($_POST['action']) && $_POST['action'] === 'set_infra') {
+    if (!Security::checkCsrf($_POST['csrf_token'] ?? '')) {
+        die("Erreur de sécurité CSRF.");
+    }
     $path = Security::sanitize($_POST['ollama_models_path']);
     $success = $env->set('OLLAMA_MODELS_PATH', $path);
     
     if ($success) {
-        // Pilotage automatique de l'infrastructure
         try {
             $docker = Container::get('docker');
             $docker->restartInfrastructure();
         } catch (\Exception $e) {
-            // Log error but continue
+            // Log error
         }
     }
     
@@ -119,7 +135,7 @@ include __DIR__ . '/includes/header.php';
 </header>
 
 <?php
-$currentTab = $_GET['tab'] ?? 'general';
+$currentTab = Security::sanitize($_GET['tab'] ?? 'general');
 ?>
 
 <div class="config-layout">
@@ -238,7 +254,7 @@ $currentTab = $_GET['tab'] ?? 'general';
                                 <?php if ($isDefault && $activeProvider === 'ollama'): ?>
                                     <span style="font-size: 0.55rem; background: var(--primary); color: white; padding: 2px 7px; border-radius: 8px; font-weight:900;">ACTIF</span>
                                 <?php elseif (!isset($m['not_pulled'])): ?>
-                                    <a href="?tab=engines&set_default=<?= urlencode($m['name']) ?>" style="font-size:0.6rem; color:var(--primary); text-decoration:none; font-weight:800;">ACTIVER</a>
+                                    <a href="?tab=engines&set_default=<?= urlencode($m['name']) ?>&csrf_token=<?= Security::getCsrfToken() ?>" style="font-size:0.6rem; color:var(--primary); text-decoration:none; font-weight:800;">ACTIVER</a>
                                 <?php endif; ?>
                             </div>
                         <?php endforeach; ?>
@@ -303,7 +319,7 @@ $currentTab = $_GET['tab'] ?? 'general';
                                         <div style="font-size:0.6rem; color:var(--text-dim);"><?= strtoupper(pathinfo($file, PATHINFO_EXTENSION)) ?> - Segmenté & Vectorisé</div>
                                     </div>
                                 </div>
-                                <a href="?tab=memory&delete_doc=<?= urlencode($file) ?>" style="color:#f87171; text-decoration:none; font-size:1.2rem; font-weight:100; opacity:0.6;" onclick="return confirm('Supprimer ce document ?')">&times;</a>
+                                <a href="?tab=memory&delete_doc=<?= urlencode($file) ?>&csrf_token=<?= Security::getCsrfToken() ?>" style="color:#f87171; text-decoration:none; font-size:1.2rem; font-weight:100; opacity:0.6;" onclick="return confirm('Supprimer ce document ?')">&times;</a>
                             </div>
                         <?php endforeach; ?>
                     <?php endif; ?>
@@ -402,7 +418,7 @@ $currentTab = $_GET['tab'] ?? 'general';
             fetch('memory.php', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                body: `action=add&fact=${encodeURIComponent(fact)}`
+                body: `action=add&fact=${encodeURIComponent(fact)}&csrf_token=<?= Security::getCsrfToken() ?>`
             }).then(() => location.reload());
         }
 
@@ -411,7 +427,7 @@ $currentTab = $_GET['tab'] ?? 'general';
             fetch('memory.php', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                body: `action=delete&index=${index}`
+                body: `action=delete&index=${index}&csrf_token=<?= Security::getCsrfToken() ?>`
             }).then(() => location.reload());
         }
         </script>
@@ -531,6 +547,15 @@ function navigatePicker(path) {
             }
 
             content.innerHTML = html;
+        })
+        .catch(err => {
+            console.error("Discovery Error:", err);
+            list.innerHTML = `
+                <div style="padding:20px; text-align:center;">
+                    <p style="color:#f87171;">La connexion au Gateway a échoué.</p>
+                    <p style="font-size:0.7rem; opacity:0.6;">Détail : ${err.message}</p>
+                </div>`;
+            status.innerText = "Erreur de connexion";
         });
 }
 
@@ -568,8 +593,11 @@ function openNativeDiscovery() {
     list.innerHTML = '<div style="opacity:0.5; padding:20px; text-align:center;">Recherche de votre Ollama Windows...</div>';
 
     // On passe par le Gateway (Proxy) pour éviter les erreurs CORS navigateur vers localhost:11434
-    fetch('http://' + window.location.hostname + ':8003/v1/native/models') // Port du Gateway
-        .then(res => res.json())
+    fetch('http://127.0.0.1:8003/v1/native/models') // Port du Gateway
+        .then(res => {
+            if (!res.ok) throw new Error("Réponse Gateway invalide : " + res.status);
+            return res.json();
+        })
         .then(data => {
             if (!data.models || data.models.length === 0) {
                 list.innerHTML = `

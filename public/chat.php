@@ -15,10 +15,16 @@ $activeProvider = $config->get('active_provider', 'ollama');
 // $upload_msg est désormais géré en AJAX pour l'Expert Edition
 
 // History clearing
-if (isset($_POST['action']) && $_POST['action'] === "clear") {
-    Conversation::clearHistory();
-    header("Location: chat.php");
-    exit;
+if (isset($_POST['action'])) {
+    $action = \EasyLocalAI\Core\Security::sanitize($_POST['action']);
+    if ($action === "clear") {
+        if (!isset($_POST['csrf_token']) || !\EasyLocalAI\Core\Security::checkCsrf($_POST['csrf_token'])) {
+            die("Erreur de sécurité : Jeton CSRF invalide (Action: Clear History)");
+        }
+        Conversation::clearHistory();
+        header("Location: chat.php");
+        exit;
+    }
 }
 
 include __DIR__ . '/includes/header.php';
@@ -36,7 +42,7 @@ include __DIR__ . '/includes/header.php';
         <span style="font-size: 0.55rem; background: var(--primary); color:white; padding: 3px 10px; border-radius: 20px; vertical-align: middle;"><?= strtoupper($activeProvider) ?> MODE</span>
         <span style="font-size: 0.55rem; background: rgba(255,255,255,0.05); color:var(--text-dim); padding: 3px 10px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); margin-left: 5px;"><?= $config->get('model_name', 'llama3.2') ?></span>
     </div>
-    <p class="subtitle" style="opacity: 0.6; font-size: 1rem; margin-top: 20px;">L'intelligence souveraine à pleine puissance, augmentée par le RAG et votre infrastructure locale.</p>
+    <p class="subtitle" style="opacity: 0.6; font-size: 1rem; margin-top: 20px;">Le système souverain à pleine puissance, augmenté par le RAG et votre infrastructure locale.</p>
 </header>
 
 <div class="main-chat-area">
@@ -60,7 +66,7 @@ include __DIR__ . '/includes/header.php';
     </div>
 
     <form class="chat-form" id="questionForm">
-        <input type="text" id="qInput" placeholder="Posez votre question à l'IA..." required minlength="5" autocomplete="off">
+        <input type="text" id="qInput" placeholder="Posez votre question à l'Assistant..." required minlength="5" autocomplete="off">
         <button type="submit" id="submitBtn">
             <div class="loader" id="loader" style="display:none; width:16px; height:16px; border-radius:50%; margin-right:10px;"></div>
             <span id="btnText">Envoyer</span>
@@ -217,25 +223,45 @@ include __DIR__ . '/includes/header.php';
                             if (currentEvent === "thought") {
                                 const log = document.getElementById('thoughtLog');
                                 const step = document.createElement('div');
-                                step.className = "thought-step fadeIn";
+                                step.className = "thought-v4 fadeIn";
                                 
-                                // Coloration et icône selon le type du message (RÉFLEXION, ACTION, OBSERVATION)
-                                let icon = "🧬";
-                                let color = "rgba(255,255,255,0.6)";
-                                if (json.content.startsWith("ACTION")) { icon = "🛠️"; color = "var(--primary)"; }
-                                if (json.content.startsWith("OBSERVATION")) { icon = "👁️"; color = "#10b981"; }
-                                if (json.content.startsWith("RÉFLEXION")) { icon = "🧠"; color = "#a78bfa"; }
+                                // Génération d'Icônes KINETIC SVG
+                                let iconPath = " <circle cx='12' cy='12' r='10'></circle><line x1='12' y1='8' x2='12' y2='12'></line><line x1='12' y1='16' x2='12.01' y2='16'></line>"; 
+                                let stateClass = "icon-thought";
+                                let label = "ANALYSE";
 
-                                step.style.background = "rgba(255,255,255,0.02)";
-                                step.style.padding = "10px 15px";
-                                step.style.borderRadius = "12px";
-                                step.style.border = `1px solid ${color.replace(')', ', 0.1)')}`;
-                                step.style.fontSize = "0.75rem";
-                                step.style.color = color;
+                                if (json.content.startsWith("ACTION")) { 
+                                    if (json.content.includes("python_execute")) {
+                                        iconPath = "<polyline points='4 17 10 11 4 5'></polyline><line x1='12' y1='19' x2='20' y2='19'></line>";
+                                        label = "TERMINAL";
+                                    } else {
+                                        iconPath = "<path d='M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z'></path>";
+                                        label = "OUTIL";
+                                    }
+                                    stateClass = "icon-action";
+                                } else if (json.content.startsWith("OBSERVATION")) { 
+                                    iconPath = "<path d='M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z'></path><circle cx='12' cy='12' r='3'></circle>";
+                                    stateClass = "icon-observation";
+                                    label = "RÉSULTAT";
+                                } else if (json.content.startsWith("RÉFLEXION")) { 
+                                    iconPath = "<path d='M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 4.44-2.54Z'></path><path d='M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-4.44-2.54Z'></path>";
+                                    stateClass = "icon-thought";
+                                    label = "CORTEX";
+                                }
 
-                                step.innerHTML = `<span style="margin-right:8px;">${icon}</span> ${json.content}`;
+                                step.innerHTML = `
+                                    <div class="kinetic-icon-wrapper ${stateClass} ${label === 'CORTEX' ? 'spin-kinetic' : ''}">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${iconPath}</svg>
+                                    </div>
+                                    <div style="flex:1;">
+                                        <div style="font-size:0.6rem; opacity:0.4; font-weight:700; margin-bottom:2px; letter-spacing:1px;">${label}</div>
+                                        <div style="font-size:0.85rem;">${json.content}</div>
+                                    </div>
+                                `;
                                 log.appendChild(step);
-                                log.scrollTop = log.scrollHeight;
+                                
+                                // Auto-scroll smooth
+                                log.parentElement.scrollTop = log.parentElement.scrollHeight;
                             } else {
                                 const content = json.message?.content || "";
                                 fullText += content;
@@ -268,5 +294,11 @@ include __DIR__ . '/includes/header.php';
         });
     }
 </script>
+
+
+<!-- Arrière-plan Kinetic 3D (Subtil) -->
+<div id="canvas-container" style="position:fixed; top:0; left:0; width:100%; height:100%; z-index:-1; opacity:0.3; pointer-events:none;"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="kinetic-bg.js"></script>
 
 <?php include __DIR__ . '/includes/footer.php'; ?>

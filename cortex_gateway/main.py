@@ -3,6 +3,7 @@ import logging
 import httpx
 from fastapi import FastAPI, Request, Response, HTTPException, UploadFile, File
 from fastapi.responses import StreamingResponse
+from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 import yaml
 from typing import List, Dict, Any, Optional
@@ -17,8 +18,8 @@ CORTEX_API_KEY = os.getenv("CORTEX_API_KEY", "")
 
 class SecurityMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
-        # La santé est publique
-        if request.url.path == "/health":
+        # La santé et la découverte native sont publiques (browser fetch)
+        if request.url.path in ["/health", "/v1/native/models"]:
             return await call_next(request)
         
         # Vérification du jeton si configuré
@@ -31,6 +32,16 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         return await call_next(request)
 
 app = FastAPI(title="Cortex Gateway V4 (Béton Armé)")
+
+# Activation CORS (Indispensable pour le Browser Fetch)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], # On peut restreindre au port 8002 si besoin
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.add_middleware(SecurityMiddleware)
 
 # Configuration

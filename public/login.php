@@ -1,14 +1,19 @@
 <?php
-// public/login.php - DI Refactor
+/**
+ * EasyLocalAI - Login Immersif Kinetic 3D
+ * Interface de connexion ultra-premium avec moteur de particules.
+ */
 require_once __DIR__ . '/../config/bootstrap.php';
 
 use EasyLocalAI\Core\Container;
+use EasyLocalAI\Core\Security;
 
 $auth = Container::get('auth');
-
 $error = null;
+
 if (isset($_POST['password'])) {
-    if (!isset($_POST['csrf_token']) || !EasyLocalAI\Core\Security::checkCsrf($_POST['csrf_token'])) {
+    $csrf = Security::sanitize($_POST['csrf_token'] ?? '');
+    if (!$csrf || !Security::checkCsrf($csrf)) {
         die("Erreur de sécurité (CSRF)");
     }
     
@@ -16,7 +21,7 @@ if (isset($_POST['password'])) {
         header("Location: chat.php");
         exit;
     } else {
-        $error = "Mot de passe incorrect.";
+        $error = "Accès refusé. Mot de passe incorrect.";
     }
 }
 ?>
@@ -25,38 +30,72 @@ if (isset($_POST['password'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Connexion - EasyLocalAI</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
-    <style>
-        :root { --primary: #6366f1; --bg: #0f172a; --card-bg: rgba(30, 41, 59, 0.7); --text: #f8fafc; --text-dim: #94a3b8; --border: rgba(255, 255, 255, 0.1); --glass: rgba(255, 255, 255, 0.05); }
-        body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; background-image: radial-gradient(circle at 50% -20%, #312e81 0%, transparent 50%); }
-        .login-card { width: 100%; max-width: 400px; background: var(--card-bg); backdrop-filter: blur(12px); border: 1px solid var(--border); border-radius: 24px; padding: 40px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); text-align: center; }
-        h1 { margin: 0 0 10px; font-size: 1.5rem; background: linear-gradient(to right, #818cf8, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        p { color: var(--text-dim); font-size: 0.9rem; margin-bottom: 30px; }
-        input[type="password"] { width: 100%; background: var(--glass); border: 1px solid var(--border); border-radius: 12px; padding: 12px 15px; color: white; font-size: 1rem; margin-bottom: 20px; box-sizing: border-box; text-align: center; }
-        button { width: 100%; background: var(--primary); color: white; border: none; padding: 12px; border-radius: 12px; font-weight: 600; cursor: pointer; transition: 0.2s; }
-        button:hover { background: #4f46e5; transform: translateY(-1px); }
-        .error { color: #f87171; font-size: 0.8rem; margin-bottom: 15px; }
-    </style>
+    <title>S'authentifier | EasyLocalAI Kinetic</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="landing.css?v=4.5">
+    
+    <!-- Scripts Moteur 3D -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
 </head>
-<body>
-    <div class="login-card">
-        <h1>EasyLocalAI 🚀</h1>
-        <p>Veuillez entrer le mot de passe administrateur pour accéder à l'IA.</p>
-        
+<body class="immersive-login">
+
+<!-- MOTEUR DE BULLES 3D -->
+<div id="canvas-container"></div>
+
+<div class="login-sphere-container">
+    <div class="login-glass-card glass-panel reveal visible">
+        <div style="margin-bottom: 30px;">
+            <div style="display:inline-flex; align-items:center; justify-content:center; width:64px; height:64px; background:rgba(99, 102, 241, 0.1); border-radius:18px; border:1px solid rgba(99, 102, 241, 0.2); margin-bottom: 20px;">
+                <i data-lucide="shield-check" style="color:var(--primary); width:32px; height:32px;"></i>
+            </div>
+            <h1 class="massive-title" style="font-size: 2.2rem; letter-spacing: -1px;">EasyLocal<span class="gradient-text">AI</span></h1>
+            <p style="color:var(--text-dim); font-size:0.9rem; font-weight:300;">Identifiez-vous pour déverrouiller la puissance locale.</p>
+        </div>
+
         <?php if ($error): ?>
-            <div class="error"><?= htmlspecialchars($error) ?></div>
+            <div style="background:rgba(239, 68, 68, 0.1); color:#f87171; border:1px solid rgba(239, 68, 68, 0.2); padding:12px; border-radius:12px; font-size:0.8rem; margin-bottom: 25px; display:flex; align-items:center; gap:10px;">
+                <i data-lucide="alert-circle" style="width:16px; height:16px;"></i>
+                <?= htmlspecialchars($error) ?>
+            </div>
         <?php endif; ?>
 
-        <form method="post">
-            <input type="hidden" name="csrf_token" value="<?= EasyLocalAI\Core\Security::getCsrfToken() ?>">
-            <input type="password" name="password" placeholder="Mot de passe" required autofocus>
-            <button type="submit">Se connecter</button>
+        <form method="post" autocomplete="off">
+            <input type="hidden" name="csrf_token" value="<?= Security::getCsrfToken() ?>">
+            
+            <div class="input-group-kinetic">
+                <input type="password" name="password" placeholder="Mot de passe Maître" required autofocus>
+                <i data-lucide="key" style="position:absolute; right:15px; top:50%; transform:translateY(-50%); width:18px; color:var(--text-dim); opacity:0.5;"></i>
+            </div>
+
+            <button type="submit" class="btn-elite" style="width: 100%; height: 54px; font-size: 0.9rem;">
+                SE CONNECTER
+            </button>
         </form>
-        
-        <div style="margin-top: 20px; font-size: 0.75rem; color: var(--text-dim);">
-            Par défaut: <code>admin</code>
+
+        <div style="margin-top: 35px; padding-top: 25px; border-top: 1px solid var(--glass-border); display:flex; justify-content:space-between; align-items:center;">
+             <span style="font-size:0.7rem; color:var(--text-dim); opacity:0.6;">v4.5 Expert Edition</span>
+             <a href="index.php" style="font-size:0.7rem; color:var(--primary); text-decoration:none; font-weight:600;">RETOUR ACCUEIL</a>
         </div>
     </div>
+</div>
+
+<!-- Initialisation -->
+<script src="kinetic-bg.js"></script>
+<script>
+    lucide.createIcons();
+    
+    // Effet d'entrée en fondu
+    document.querySelector('.login-glass-card').style.opacity = '0';
+    document.querySelector('.login-glass-card').style.transform = 'translateY(20px) scale(0.98)';
+    
+    setTimeout(() => {
+        document.querySelector('.login-glass-card').style.transition = 'all 1s cubic-bezier(0.16, 1, 0.3, 1)';
+        document.querySelector('.login-glass-card').style.opacity = '1';
+        document.querySelector('.login-glass-card').style.transform = 'translateY(0) scale(1)';
+    }, 100);
+</script>
+
 </body>
 </html>

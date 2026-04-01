@@ -13,7 +13,7 @@ if (!Container::get('auth')->isLoggedIn()) {
 }
 
 $explorer = Container::get('explorer');
-$path = $_GET['path'] ?? '';
+$path = Security::sanitize($_GET['path'] ?? '');
 
 header('Content-Type: application/json');
 echo json_encode($explorer->listDirectories($path));

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= htmlspecialchars($app_name ?? 'EasyLocalAI') ?> | Intelligence Locale</title>
+    <title><?= htmlspecialchars($app_name ?? 'EasyLocalAI') ?> | Assistant Local Souverain</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -30,7 +30,13 @@
 </head>
 <body>
     <div class="app-layout">
-        <aside class="sidebar">
+        <button class="mobile-menu-toggle" onclick="toggleSidebar()" aria-label="Menu">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+        </button>
+
+        <div id="sidebarBackdrop" class="sidebar-backdrop" onclick="toggleSidebar()"></div>
+
+        <aside id="mainSidebar" class="sidebar">
             <div class="sidebar-header" style="padding-bottom: 30px; border-bottom: 1px solid var(--border);">
                 <h2 style="font-family: 'Poppins', sans-serif; font-size: 1.2rem; display:flex; align-items:center; gap:10px; margin:0;">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--primary);"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
@@ -41,7 +47,7 @@
             <nav class="side-nav">
                 <a href="chat.php" class="<?= basename($_SERVER['PHP_SELF']) == 'chat.php' ? 'active' : '' ?>">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                    Chat Agent
+                    Assistant de Chat
                 </a>
 
                 <div class="nav-group <?= basename($_SERVER['PHP_SELF']) == 'setup.php' ? 'open active' : '' ?>">
@@ -52,7 +58,7 @@
                     </a>
                     <div class="sub-nav">
                         <?php 
-                            $currentTab = $_GET['tab'] ?? 'general';
+                            $currentTab = \EasyLocalAI\Core\Security::sanitize($_GET['tab'] ?? 'general');
                         ?>
                         <a href="setup.php?tab=general" class="<?= ($currentTab === 'general') ? 'active' : '' ?>">Général</a>
                         <a href="setup.php?tab=engines" class="<?= ($currentTab === 'engines') ? 'active' : '' ?>">Moteurs IA</a>
@@ -117,3 +123,19 @@
 
         <main class="main-content">
             <div class="content-wrapper">
+
+            <script>
+                function toggleSidebar() {
+                    const sidebar = document.getElementById('mainSidebar');
+                    const backdrop = document.getElementById('sidebarBackdrop');
+                    sidebar.classList.toggle('sidebar-active');
+                    backdrop.classList.toggle('active');
+                    
+                    // Empêcher le scroll du body quand le menu est ouvert
+                    if (sidebar.classList.contains('sidebar-active')) {
+                        document.body.style.overflow = 'hidden';
+                    } else {
+                        document.body.style.overflow = '';
+                    }
+                }
+            </script>

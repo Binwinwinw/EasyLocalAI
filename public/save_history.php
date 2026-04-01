@@ -3,9 +3,15 @@
 require_once __DIR__ . '/../config/bootstrap.php';
 
 use EasyLocalAI\App\Conversation;
+use EasyLocalAI\Core\Security;
 
-$q = $_POST['q'] ?? '';
-$a = $_POST['a'] ?? '';
+if (!Security::checkCsrf($_POST['csrf_token'] ?? '')) {
+    echo json_encode(['status' => 'error', 'message' => 'CSRF Token Invalid']);
+    exit;
+}
+
+$q = Security::sanitize($_POST['q'] ?? '');
+$a = Security::sanitize($_POST['a'] ?? '');
 
 if ($q && $a) {
     Conversation::addMessage($q, $a);

@@ -107,7 +107,77 @@ body::after {
     display: flex;
     flex-direction: column;
     padding: 30px 20px;
-    z-index: 100;
+    z-index: 1100;
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* --- Responsive Sidebar (Drawer Mode) --- */
+@media (max-width: 900px) {
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100vh;
+        transform: translateX(-100%);
+        box-shadow: 20px 0 50px rgba(0,0,0,0.5);
+    }
+    
+    .sidebar.sidebar-active {
+        transform: translateX(0);
+    }
+    
+    .main-content {
+        padding: 20px;
+    }
+}
+
+/* Bouton Menu Mobile */
+.mobile-menu-toggle {
+    display: none;
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 1050;
+    width: 44px;
+    height: 44px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--text);
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    transition: 0.3s;
+}
+
+@media (max-width: 900px) {
+    .mobile-menu-toggle {
+        display: flex;
+    }
+    .content-wrapper {
+        padding-top: 50px;
+    }
+}
+
+.mobile-menu-toggle:hover {
+    border-color: var(--primary);
+    box-shadow: 0 0 15px var(--primary-glow);
+}
+
+/* Calque de fermeture (Backdrop) */
+.sidebar-backdrop {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    z-index: 1090;
+    animation: fadeIn 0.3s ease;
+}
+
+.sidebar-backdrop.active {
+    display: block;
 }
 
 .main-content {
@@ -598,4 +668,62 @@ button:active { transform: translateY(0); }
 
 .config-sidebar {
     display: none; /* Cache la sidebar interne devenue obsolète */
+}
+
+/* Kinetic Cognition PRO-MAX (Phase 17) */
+.thought-v4 {
+    display: flex;
+    gap: 15px;
+    padding: 15px 20px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    margin-bottom: 12px;
+    transition: all 0.5s ease;
+    animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.thought-v4:hover {
+    background: rgba(124, 58, 237, 0.05);
+    border-color: rgba(124, 58, 237, 0.2);
+}
+
+/* Effet de fondu sur les anciennes étapes */
+.thought-v4:not(:last-child) {
+    opacity: 0.5;
+    filter: blur(0.5px);
+    transform: scale(0.98);
+}
+
+.kinetic-icon-wrapper {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    position: relative;
+    overflow: visible;
+}
+
+/* Glows dynamiques selon l'état */
+.icon-thought { color: #a78bfa; background: rgba(167, 139, 250, 0.1); border: 1px solid rgba(167, 139, 250, 0.2); }
+.icon-action { color: var(--primary); background: rgba(124, 58, 237, 0.1); border: 1px solid rgba(124, 58, 237, 0.2); }
+.icon-observation { color: #10b981; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); }
+
+.kinetic-icon-wrapper svg {
+    width: 18px;
+    height: 18px;
+    filter: drop-shadow(0 0 5px currentColor);
+}
+
+@keyframes spin-slow {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+.spin-kinetic { animation: spin-slow 8s linear infinite; }
+
+.thought-timeline::before {
+    display: none; 
 }

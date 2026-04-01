@@ -48,7 +48,8 @@ class RAG
         $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
 
         // 3. Appel au Gateway avec Jeton Secret
-        $curl = curl_init("http://cortex_gateway_v4:8000/v1/rag/ingest");
+        $gatewayUrl = \EasyLocalAI\Core\Container::get('env')->get('CORTEX_GATEWAY_URL', 'http://127.0.0.1:8003');
+        $curl = curl_init($gatewayUrl . "/v1/rag/ingest");
         $cFile = new \CURLFile($file['tmp_name'], $file['type'], $file['name']);
         
         $token = Container::get('env')->get('CORTEX_API_KEY');

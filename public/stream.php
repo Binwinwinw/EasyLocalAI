@@ -5,8 +5,10 @@ require_once __DIR__ . '/../config/bootstrap.php';
 use EasyLocalAI\Core\Container;
 use EasyLocalAI\App\Conversation;
 
-$q = $_GET['q'] ?? "";
-$key = $_GET['key'] ?? "";
+use EasyLocalAI\Core\Security;
+
+$q = Security::sanitize($_GET['q'] ?? "");
+$key = Security::sanitize($_GET['key'] ?? "");
 
 if (!$q) exit;
 

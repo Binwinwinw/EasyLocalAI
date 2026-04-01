@@ -62,16 +62,36 @@ class FileExplorer
     }
 
     /**
-     * Sécurise le chemin pour s'assurer qu'il reste dans /host
+     * Sécurise le chemin pour s'assurer qu'il reste dans /host (Jailing).
      */
     private function securePath(string $subPath): string
     {
-        // Nettoyage des antislashs et doubles points
-        $subPath = str_replace('\\', '/', $subPath);
-        $subPath = str_replace('..', '', $subPath);
-        $subPath = ltrim($subPath, '/');
+        // 1. Détermination du chemin cible absolu
+        $subPath = str_replace(['\\', '..'], ['/', ''], $subPath);
+        $absoluteTarget = $this->hostRoot . DIRECTORY_SEPARATOR . ltrim($subPath, '/');
+        
+        // 2. Validation par realpath()
+        // Note: Realpath retourne false si le dossier n'existe pas encore
+        $realHostRoot = realpath($this->hostRoot);
+        
+        if ($realHostRoot === false) {
+            // Environnement Docker mal configuré ou dossier /host absent
+            return $this->hostRoot;
+        }
 
-        return $this->hostRoot . ($subPath ? '/' . $subPath : '');
+        // Si le chemin existe, on vérifie qu'il commence bien par realHostRoot
+        if (file_exists($absoluteTarget)) {
+            $realTarget = realpath($absoluteTarget);
+            if (strpos($realTarget, $realHostRoot) !== 0) {
+                // Tentative d'évasion détectée !
+                throw new \Exception("Violation de sécurité : Tentative d'évasion de répertoire détectée.");
+            }
+            return $realTarget;
+        }
+
+        // Si le chemin n'existe pas encore (création de dossier), on vérifie la chaîne
+        // En s'assurant qu'il n'y a plus de '..'
+        return $absoluteTarget;
     }
 
     /**

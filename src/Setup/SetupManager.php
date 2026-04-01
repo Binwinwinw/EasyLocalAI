@@ -58,9 +58,11 @@ class SetupManager
             
             $persona = json_decode($personaJson, true);
             if (json_last_error() === JSON_ERROR_NONE && is_array($persona)) {
+                // Sanitize all elements in the persona array
+                $persona = Security::sanitize($persona);
                 $this->config->set('persona', $persona);
                 // On met à jour aussi le vieux system_prompt pour la compatibilité LLM directe si besoin
-                $this->config->set('system_prompt', $personaJson);
+                $this->config->set('system_prompt', json_encode($persona));
             }
             
             $this->config->set('setup_completed', true);
@@ -71,6 +73,7 @@ class SetupManager
         if ($_POST['action'] === 'setup_save') {
             $name = Security::sanitize($_POST['app_name_input'] ?? 'EasyLocalAI');
             $profile = Security::sanitize($_POST['profile_choice'] ?? 'general');
+            $currentTab = \EasyLocalAI\Core\Security::sanitize($_GET['tab'] ?? 'general');
             $custom = Security::sanitize($_POST['custom_prompt'] ?? '');
             
             $this->config->set('app_name', $name);
@@ -90,14 +93,14 @@ class SetupManager
 
         // Ajout d'une nouvelle compétence
         if ($_POST['action'] === 'skill_add') {
-            $key = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', Security::sanitize($_POST['skill_name'])));
-            $label = Security::sanitize($_POST['skill_label']);
-            $prompt = Security::sanitize($_POST['skill_prompt']);
+            $key = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', Security::sanitize($_POST['skill_name'] ?? '')));
+            $label = Security::sanitize($_POST['skill_label'] ?? $_POST['skill_name'] ?? '');
+            $prompt = Security::sanitize($_POST['skill_prompt'] ?? '');
             
             if ($key && !isset($this->profiles[$key])) {
                 $this->addProfile($key, [
-                    'label' => $_POST['skill_label'] ?: $_POST['skill_name'],
-                    'prompt' => $_POST['skill_prompt']
+                    'label' => $label,
+                    'prompt' => $prompt
                 ]);
                 return true;
             }

@@ -1,29 +1,28 @@
-# Docker & Models
+# Docker & Modèles
 ollama_data/
+docker-compose.override.yml
 
-# User Data (RAG)
-knowledge/*.txt
+# Vendor & Dépendances
+vendor/
+composer.lock
+
+# Données Utilisateur (RAG & Knowledge) - CRITIQUE
+knowledge/*
 !knowledge/.gitkeep
 
-# Refactor Legacy
-legacy/
-
-# Config (Ignoré pour éviter de committer vos clés/prompts persos)
-config/settings.json
-
-# OS specific files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-# Logs
-*.log
-
-# Environment
+# Configuration Application (Sensible)
 .env
-.env.local
-.env.*.local
+.env.*
+config/settings.json
+gateway-config.yaml
+
+# Système & IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Logs & Temp
+*.log
+tmp/*
+!tmp/.gitkeep

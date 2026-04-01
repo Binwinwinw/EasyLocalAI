@@ -1,33 +1,31 @@
+# 📜 Sources of Truth
+**LIMIT: MAX 60 LINES. KEEP BLUNT.**
+
+| File | Priority | Purpose |
+|------|----------|---------|
+| [docs/Chartre.md](file:///d:/Hostinger/public_html/EasyLocalAI_V2/docs/Chartre.md) | **CRITICAL** | Sovereignty & EXCLUDE MergeLabs. |
+| [docs/Conventions.md](file:///d:/Hostinger/public_html/EasyLocalAI_V2/docs/Conventions.md) | **HIGH** | Senior Patterns (CSRF, XSS, PSR-4). |
+| [docs/Journal_de_bord.md](file:///d:/Hostinger/public_html/EasyLocalAI_V2/docs/Journal_de_bord.md) | **NORMAL** | History & Current Phase (1-25+). |
+
+---
+
 <!-- hacklm-memory:start -->
-# EasyLocalAI - Neural Router (Hybrid V4) 🧠
+## Memory-Augmented Context
+Read memory files on-demand. Hemingway style. Short sentences. No filler.
 
-Vous êtes sur un projet **Hybrid V4** (Souveraineté locale + Puissance Cloud). Votre contexte est distribué.
+| File | Category | When to read |
+|------|----------|-------------|
+| [.memory/instructions.md](.memory/instructions.md) | Instruction | How to behave |
+| [.memory/quirks.md](.memory/quirks.md) | Quirk | Project-specific weirdness |
+| [.memory/preferences.md](.memory/preferences.md) | Preference | Style/design/naming |
+| [.memory/decisions.md](.memory/decisions.md) | Decision | Architectural changes |
+| [.memory/security.md](.memory/security.md) | **Security** | **ALWAYS — before any change** |
 
-## 1. La Boucle de Pensée
-1. **Sécurité** : Consultez `../.memory/security.md` avant toute action POST.
-2. **Architecture** : Le projet utilise un `Core\Container`. Vérifiez `../config/bootstrap.php`.
-3. **Pilotage** : Toute la config se passe dans `setup.php` (Unified Control Center).
-4. **Mémoriser** : Résumez les changements dans `../.memory/history.md`.
+### Memory Tools
+Call `queryMemory` before answering. Call `storeMemory` (kebab-case) when:
+1. User states rule/preference. 2. User corrects you. 3. Fix occurs.
+4. Each task end: store decision/pattern.
 
-## 2. Cartographie du Cerveau
-
-| Neurone | Usage |
-| :--- | :--- |
-| **[../.memory/](../.memory/)** | Mémoire long terme (Décisions, Quirks, Sécurité). |
-| **[prompts/](prompts/)** | Instructions pour tâches spécifiques (Refactor, etc.). |
-| **[../.agents/skills/](../.agents/skills/)** | Expertise technique (PHP-Expert, RAG, Ollama). |
-| **[../knowledge/](../knowledge/)** | Base de connaissances pour le RAG. |
-
-## 3. Taxonomie du Projet (Anchoring)
-- **Application** : `src/App/` (Agent, Conversation, Memory).
-- **Core** : `src/Core/` (Container, Security, Ollama). Config dans `config/`.
-- **UI** : `public/` (V4 Hybrid Cinematic).
-- **RAG** : `src/RAG/` (Embedder, VectorStore). Données dans `knowledge/`.
-
-## 4. Règles d'Honneur (Code)
-- Respectez le style **Cinematic v3** (Sidebar, Bento, Scanlines).
-- Les clés API sont gérées via `localStorage` (Zero-Knowledge).
-- Utilisez systématiquement `write_file` pour le code, JAMAIS `list_directory`.
-- Gardez ce fichier < 150 lignes.
-
+Same slug = update.
+**Rule: This file MUST NOT exceed 60 lines.**
 <!-- hacklm-memory:end -->
