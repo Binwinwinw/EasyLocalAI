@@ -85,7 +85,13 @@ Container::register('memory', function() {
  */
 Container::register('ollama', function() {
     $apiKey = Container::get('env')->get('CORTEX_API_KEY', '');
-    return new Ollama(Container::get('config'), Container::get('memory')->getContextString(), $apiKey);
+    $ollamaHost = Container::get('env')->get('OLLAMA_HOST', 'http://ollama_upstream:11434');
+    return new Ollama(
+        Container::get('config'), 
+        Container::get('memory')->getContextString(), 
+        $apiKey,
+        $ollamaHost
+    );
 });
 
 /**

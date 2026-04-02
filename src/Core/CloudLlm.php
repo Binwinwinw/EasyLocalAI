@@ -32,9 +32,9 @@ class CloudLlm implements LlmInterface
         $this->systemPrompt = $prompt;
     }
 
-    public function ask(string $prompt, array $history = []): string
+    public function ask(string $prompt, array $history = [], array $images = []): string
     {
-        $messages = $this->prepareMessages($prompt, $history);
+        $messages = $this->prepareMessages($prompt, $history, $images);
 
         $curl = curl_init();
         curl_setopt_array($curl, [
@@ -63,9 +63,9 @@ class CloudLlm implements LlmInterface
         return $data['choices'][0]['message']['content'] ?? "Erreur Cloud (Réponse vide)";
     }
 
-    public function stream(string $prompt, array $history = []): void
+    public function stream(string $prompt, array $history = [], array $images = []): void
     {
-        $messages = $this->prepareMessages($prompt, $history);
+        $messages = $this->prepareMessages($prompt, $history, $images);
 
         $curl = curl_init();
         curl_setopt_array($curl, [
@@ -93,7 +93,7 @@ class CloudLlm implements LlmInterface
         curl_close($curl);
     }
 
-    private function prepareMessages(string $prompt, array $history): array
+    private function prepareMessages(string $prompt, array $history, array $images = []): array
     {
         $messages = [
             ["role" => "system", "content" => $this->systemPrompt]
@@ -106,7 +106,19 @@ class CloudLlm implements LlmInterface
             }
         }
 
-        $messages[] = ["role" => "user", "content" => $prompt];
+        if (empty($images)) {
+            $messages[] = ["role" => "user", "content" => $prompt];
+        } else {
+            $content = [["type" => "text", "text" => $prompt]];
+            foreach ($images as $img) {
+                $content[] = [
+                    "type"      => "image_url",
+                    "image_url" => ["url" => $img]
+                ];
+            }
+            $messages[] = ["role" => "user", "content" => $content];
+        }
+
         return $messages;
     }
 }

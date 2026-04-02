@@ -43,6 +43,29 @@ include __DIR__ . '/includes/header.php';
         <span style="font-size: 0.55rem; background: rgba(255,255,255,0.05); color:var(--text-dim); padding: 3px 10px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); margin-left: 5px;"><?= $config->get('model_name', 'llama3.2') ?></span>
     </div>
     <p class="subtitle" style="opacity: 0.6; font-size: 1rem; margin-top: 20px;">Le système souverain à pleine puissance, augmenté par le RAG et votre infrastructure locale.</p>
+
+    <!-- Expert Hub (Nexus Integration) -->
+    <div class="expert-hub fadeIn" style="margin-top: 30px; max-width: 900px; margin-left: auto; margin-right: auto;">
+        <!-- Division Tabs -->
+        <div class="division-tabs" id="divisionTabs" style="display:flex; justify-content:center; gap:10px; margin-bottom:20px; overflow-x:auto; padding-bottom:10px;">
+            <button class="division-tab active" onclick="loadDivision('engineering')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg> Engineering</button>
+            <button class="division-tab" onclick="loadDivision('design')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg> Design</button>
+            <button class="division-tab" onclick="loadDivision('testing')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Testing</button>
+            <div class="division-tab disabled" style="opacity:0.3; cursor:not-allowed;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg> Global</div>
+        </div>
+
+        <!-- Expert Grid -->
+        <div class="expert-grid" id="expertGrid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:15px; perspective: 1000px;">
+            <!-- Les cartes d'experts chargés dynamiquement via loadDivision() -->
+            <div class="expert-card active" onclick="window.selectExpertCard(this, null, 'NONE')">
+                <div class="expert-card-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+                <div class="expert-card-content">
+                    <div class="expert-card-name">Standard</div>
+                    <div class="expert-card-desc">Assistant généraliste réactif.</div>
+                </div>
+            </div>
+        </div>
+    </div>
 </header>
 
 <div class="main-chat-area">
@@ -66,8 +89,17 @@ include __DIR__ . '/includes/header.php';
     </div>
 
     <form class="chat-form" id="questionForm">
-        <input type="text" id="qInput" placeholder="Posez votre question à l'Assistant..." required minlength="5" autocomplete="off">
-        <button type="submit" id="submitBtn">
+        <div class="chat-input-wrapper" style="flex:1;">
+            <div id="imagePreview" class="image-preview-container"></div>
+            <div style="display:flex; align-items:center; background: rgba(255,255,255,0.05); border-radius: 15px; border: 1px solid rgba(255,255,255,0.1); padding: 5px 15px;">
+                <input type="file" id="imageInput" accept="image/*" multiple style="display:none;">
+                <button type="button" class="vision-btn" id="visionBtn" title="Ajouter une image">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+                </button>
+                <input type="text" id="qInput" placeholder="Posez votre question ou analysez une image..." required minlength="5" autocomplete="off" style="border:none; background:none; flex:1; margin-bottom:0; box-shadow:none;">
+            </div>
+        </div>
+        <button type="submit" id="submitBtn" style="height: 50px;">
             <div class="loader" id="loader" style="display:none; width:16px; height:16px; border-radius:50%; margin-right:10px;"></div>
             <span id="btnText">Envoyer</span>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
@@ -169,12 +201,131 @@ include __DIR__ . '/includes/header.php';
         }
     };
 
+    // --- Gestion de la Vision ---
+    let currentExpert = null;
+    let currentImages = [];
+
+    // --- Expert Hub Logic (Nexus) ---
+    window.loadDivision = async function(division) {
+        // UI Tabs update
+        document.querySelectorAll('.division-tab').forEach(t => t.classList.remove('active'));
+        if (event) event.currentTarget.classList.add('active');
+
+        const grid = document.getElementById('expertGrid');
+        grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:20px; opacity:0.5;">Initialisation de la division ${division}...</div>`;
+
+        try {
+            const resp = await fetch(`get_experts.php?division=${division}`);
+            const data = await resp.json();
+
+            grid.innerHTML = ""; // Clear loader
+            
+            // Re-ajouter l'option "Standard"
+            const standardCard = document.createElement('div');
+            standardCard.className = `expert-card ${!currentExpert ? 'active' : ''}`;
+            standardCard.onclick = (e) => window.selectExpertCard(standardCard, null, 'NONE');
+            standardCard.innerHTML = `
+                <div class="expert-card-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+                <div class="expert-card-content">
+                    <div class="expert-card-name">Standard</div>
+                    <div class="expert-card-desc">Assistant généraliste réactif.</div>
+                </div>
+            `;
+            grid.appendChild(standardCard);
+
+            if (data.experts) {
+                data.experts.forEach(exp => {
+                    const card = document.createElement('div');
+                    const isSelected = currentExpert === `${division}:${exp.key}`;
+                    card.className = `expert-card ${isSelected ? 'active' : ''}`;
+                    card.onclick = (e) => window.selectExpertCard(card, exp.key, data.division);
+                    card.innerHTML = `
+                        <div class="expert-card-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v8"/><path d="M8 12h8"/></svg></div>
+                        <div class="expert-card-content">
+                            <div class="expert-card-name">${exp.name}</div>
+                            <div class="expert-card-desc">${exp.description}</div>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+            }
+        } catch (e) {
+            grid.innerHTML = `<div style="grid-column:1/-1; color:red; padding:20px;">Erreur de chargement des experts.</div>`;
+        }
+    }
+
+    window.selectExpertCard = function(el, key, division) {
+        document.querySelectorAll('.expert-card').forEach(c => c.classList.remove('active'));
+        el.classList.add('active');
+        
+        if (!key) {
+            currentExpert = null;
+        } else {
+            currentExpert = `${division.toLowerCase()}:${key}`;
+        }
+        console.log("Nexus Target Set:", currentExpert || "Standard");
+    }
+
+    // Init first division
+    document.addEventListener('DOMContentLoaded', () => {
+        // loadDivision('engineering'); // Optionnel, attendons l'interaction
+    });
+
+    const visionBtn = document.getElementById('visionBtn');
+    const imageInput = document.getElementById('imageInput');
+    const imagePreview = document.getElementById('imagePreview');
+
+    visionBtn.addEventListener('click', () => imageInput.click());
+
+    imageInput.addEventListener('change', async (e) => {
+        const files = Array.from(e.target.files);
+        for (const file of files) {
+            if (currentImages.length >= 5) break; // Limite à 5 images
+            const base64 = await toBase64(file);
+            currentImages.push(base64);
+            renderPreviews();
+        }
+        imageInput.value = '';
+    });
+
+    function toBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = error => reject(error);
+        });
+    }
+
+    function renderPreviews() {
+        imagePreview.innerHTML = '';
+        currentImages.forEach((img, index) => {
+            const div = document.createElement('div');
+            div.className = 'preview-item';
+            div.innerHTML = `
+                <img src="${img}">
+                <button class="remove-preview" onclick="removeImage(${index})">&times;</button>
+            `;
+            imagePreview.appendChild(div);
+        });
+    }
+
+    window.removeImage = (index) => {
+        currentImages.splice(index, 1);
+        renderPreviews();
+    };
+
+    // --- Gestion du Chat (POST Stream) ---
     form?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const q = input.value.trim();
-        if (!q || q.length < 5) return;
+        if (!q || q.length < 3) return;
 
+        const imagesBackup = [...currentImages];
         input.value = '';
+        currentImages = [];
+        renderPreviews();
+
         responseBox.innerText = "";
         document.getElementById('statusLabel').style.display = "block";
         document.getElementById('btnText').innerText = "Génération...";
@@ -182,18 +333,29 @@ include __DIR__ . '/includes/header.php';
         btn.disabled = true;
 
         try {
-            // IA Hybride : Récupération de la clé depuis le localStorage
             const activeProvider = "<?= $activeProvider ?>";
             let apiKey = "";
             if (activeProvider !== 'ollama') {
                 apiKey = localStorage.getItem('api_key_' + activeProvider) || "";
             }
 
-            const response = await fetch(`stream.php?q=${encodeURIComponent(q)}&key=${encodeURIComponent(apiKey)}`);
+            const response = await fetch('stream.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    q: q, 
+                    key: apiKey, 
+                    images: imagesBackup,
+                    expert: currentExpert,
+                    csrf_token: "<?= \EasyLocalAI\Core\Security::getCsrfToken() ?>"
+                })
+            });
+
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let fullText = "";
             let currentEvent = "";
+            let buffer = "";
 
             document.getElementById('thoughtContainer').style.display = 'block';
             document.getElementById('thoughtLog').innerHTML = "";
@@ -201,79 +363,92 @@ include __DIR__ . '/includes/header.php';
             while (true) {
                 const { value, done } = await reader.read();
                 if (done) break;
-                const chunk = decoder.decode(value);
-                const lines = chunk.split("\n");
                 
-                for (const line of lines) {
-                    if (line.startsWith("event: ")) {
-                        currentEvent = line.slice(7).trim();
-                        continue;
-                    }
-                    
-                    if (line.startsWith("data: ")) {
-                        const dataRaw = line.slice(6).trim();
-                        if (dataRaw === "[DONE]") { 
-                            finish(q, fullText); 
-                            break; 
-                        }
-                        
-                        try {
-                            const json = JSON.parse(dataRaw);
-                            
-                            if (currentEvent === "thought") {
-                                const log = document.getElementById('thoughtLog');
-                                const step = document.createElement('div');
-                                step.className = "thought-v4 fadeIn";
-                                
-                                // Génération d'Icônes KINETIC SVG
-                                let iconPath = " <circle cx='12' cy='12' r='10'></circle><line x1='12' y1='8' x2='12' y2='12'></line><line x1='12' y1='16' x2='12.01' y2='16'></line>"; 
-                                let stateClass = "icon-thought";
-                                let label = "ANALYSE";
+                buffer += decoder.decode(value, { stream: true });
+                const parts = buffer.split("\n\n");
+                buffer = parts.pop(); // On garde le dernier morceau incomplet
 
-                                if (json.content.startsWith("ACTION")) { 
-                                    if (json.content.includes("python_execute")) {
-                                        iconPath = "<polyline points='4 17 10 11 4 5'></polyline><line x1='12' y1='19' x2='20' y2='19'></line>";
-                                        label = "TERMINAL";
-                                    } else {
+                for (const part of parts) {
+                    const lines = part.split("\n");
+                    for (const line of lines) {
+                        if (line.startsWith("event: ")) {
+                            currentEvent = line.slice(7).trim();
+                        } else if (line.startsWith("data: ")) {
+                            const dataRaw = line.slice(6).trim();
+                            if (dataRaw === "[DONE]") { 
+                                finish(q, fullText); 
+                                break; 
+                            }
+                            
+                            try {
+                                const json = JSON.parse(dataRaw);
+                                if (currentEvent === "thought") {
+                                    const log = document.getElementById('thoughtLog');
+                                    const step = document.createElement('div');
+                                    step.className = "thought-v4 fadeIn";
+                                    
+                                    // Icônes Kinetic
+                                    let iconPath = "<circle cx='12' cy='12' r='10'></circle><line x1='12' y1='8' x2='12' y2='12'></line><line x1='12' y1='16' x2='12.01' y2='16'></line>"; 
+                                    let stateClass = "icon-thought";
+                                    let label = "ANALYSE";
+
+                                    if (json.content.startsWith("ACTION")) { 
                                         iconPath = "<path d='M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z'></path>";
                                         label = "OUTIL";
+                                        stateClass = "icon-action";
+                                    } else if (json.content.startsWith("OBSERVATION")) { 
+                                        iconPath = "<path d='M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z'></path><circle cx='12' cy='12' r='3'></circle>";
+                                        stateClass = "icon-observation";
+                                        label = "RÉSULTAT";
+                                    } else if (json.content.startsWith("RÉFLEXION")) { 
+                                        iconPath = "<path d='M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 4.44-2.54Z'></path><path d='M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-4.44-2.54Z'></path>";
+                                        stateClass = "icon-thought";
+                                        label = "CORTEX";
                                     }
-                                    stateClass = "icon-action";
-                                } else if (json.content.startsWith("OBSERVATION")) { 
-                                    iconPath = "<path d='M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z'></path><circle cx='12' cy='12' r='3'></circle>";
-                                    stateClass = "icon-observation";
-                                    label = "RÉSULTAT";
-                                } else if (json.content.startsWith("RÉFLEXION")) { 
-                                    iconPath = "<path d='M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 4.44-2.54Z'></path><path d='M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-4.44-2.54Z'></path>";
-                                    stateClass = "icon-thought";
-                                    label = "CORTEX";
-                                }
 
-                                step.innerHTML = `
-                                    <div class="kinetic-icon-wrapper ${stateClass} ${label === 'CORTEX' ? 'spin-kinetic' : ''}">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${iconPath}</svg>
-                                    </div>
-                                    <div style="flex:1;">
-                                        <div style="font-size:0.6rem; opacity:0.4; font-weight:700; margin-bottom:2px; letter-spacing:1px;">${label}</div>
-                                        <div style="font-size:0.85rem;">${json.content}</div>
-                                    </div>
-                                `;
-                                log.appendChild(step);
-                                
-                                // Auto-scroll smooth
-                                log.parentElement.scrollTop = log.parentElement.scrollHeight;
-                            } else {
-                                const content = json.message?.content || "";
-                                fullText += content;
-                                responseBox.innerText = fullText;
+                                    // Construction sécurisée du DOM pour éviter XSS
+                                    const iconWrapper = document.createElement('div');
+                                    iconWrapper.className = `kinetic-icon-wrapper ${stateClass} ${label === 'CORTEX' ? 'spin-kinetic' : ''}`;
+                                    iconWrapper.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${iconPath}</svg>`;
+
+                                    const contentWrapper = document.createElement('div');
+                                    contentWrapper.style.flex = "1";
+                                    
+                                    const labelDiv = document.createElement('div');
+                                    labelDiv.style.fontSize = "0.6rem";
+                                    labelDiv.style.opacity = "0.4";
+                                    labelDiv.style.fontWeight = "700";
+                                    labelDiv.style.marginBottom = "2px";
+                                    labelDiv.style.letterSpacing = "1px";
+                                    labelDiv.textContent = label;
+
+                                    const textDiv = document.createElement('div');
+                                    textDiv.style.fontSize = "0.85rem";
+                                    textDiv.textContent = json.content; // SÉCURISÉ : textContent neutralise le HTML
+
+                                    contentWrapper.appendChild(labelDiv);
+                                    contentWrapper.appendChild(textDiv);
+                                    
+                                    step.appendChild(iconWrapper);
+                                    step.appendChild(contentWrapper);
+                                    
+                                    log.appendChild(step);
+                                    log.parentElement.scrollTop = log.parentElement.scrollHeight;
+                                } else {
+                                    const content = json.message?.content || "";
+                                    fullText += content;
+                                    responseBox.innerText = fullText;
+                                }
+                            } catch (e) {
+                                // Fallback pour texte brut
+                                if (line.startsWith("data: ")) {
+                                    fullText += line.slice(6);
+                                    responseBox.innerText = fullText;
+                                }
                             }
-                        } catch (e) {
-                            // Parfois le streaming cloud envoie du texte brut
-                            fullText += dataRaw;
-                            responseBox.innerText = fullText;
                         }
-                        currentEvent = "";
                     }
+                    currentEvent = "";
                 }
             }
         } catch (e) {

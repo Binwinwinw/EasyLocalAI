@@ -29,9 +29,8 @@ class Agent {
      * @param array $history L'historique des messages.
      * @param callable|null $onStep Callback pour streamer la pensée en temps réel.
      */
-    public function run(string $query, array $history = [], ?callable $onStep = null): string {
-        $messages = $this->prepareInitialMessages($history);
-        $messages[] = ["role" => "user", "content" => $query];
+     public function run(string $query, array $history = [], ?callable $onStep = null, array $images = [], string $expertKey = null): string {
+        $messages = $this->prepareInitialMessages($history, $expertKey);
         
         $iteration = 0;
         $fullResponse = "";
@@ -40,7 +39,12 @@ class Agent {
             $iteration++;
             
             // 1. Demander à l'IA (en bloquant pour le raisonnement interne)
-            $response = $this->llm->ask($query, $history); // Note: ask() gère l'historique en interne avec prepareMessages()
+            $response = $this->llm->ask($query, $history, $images); // Note: ask() gère l'historique en interne avec prepareMessages()
+            
+            // On vide les images après la première itération pour ne pas surcharger le contexte 
+            // si l'IA boucle sur des outils (l'info est déjà dans le prompt de toute façon via history si on voulait)
+            // Mais ici on les garde pour la cohérence avec LlmInterface::ask
+            // $images = []; 
             
             // Extraction de la pensée (<thought>...</thought>)
             if (preg_match('/<thought>(.*?)<\/thought>/s', $response, $thoughtMatch)) {
@@ -97,9 +101,28 @@ class Agent {
     /**
      * Prépare le prompt système enrichi avec les outils, le Persona JSON et la Mémoire Vive.
      */
-    private function prepareInitialMessages(array $history): array {
+    private function prepareInitialMessages(array $history, string $expertKey = null): array {
         // 1. Chargement du Persona JSON
         $persona = $this->config->get('persona');
+        
+        $expertPrompt = "";
+        if ($expertKey && strpos($expertKey, ':') !== false) {
+            list($division, $key) = explode(':', $expertKey);
+            $filePath = __DIR__ . "/../../data/experts/" . strtolower($division) . ".json";
+            
+            if (file_exists($filePath)) {
+                $data = json_decode(file_get_contents($filePath), true);
+                if (isset($data['experts'])) {
+                    foreach ($data['experts'] as $exp) {
+                        if ($exp['key'] === $key) {
+                            $expertPrompt = "\n--- MODE EXPERT ACTIVÉ : " . strtoupper($exp['name']) . " ---\n" . $exp['prompt'] . "\n";
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
         $expertName = $persona['name'] ?? 'EasyLocalAI';
         $expertRole = $persona['role'] ?? 'Assistant IA';
         $expertTone = $persona['tone'] ?? 'Professionnel';
@@ -128,7 +151,7 @@ class Agent {
         "3. <answer>Ta réponse finale concise.</answer>\n\n" .
         "INTERDICTION : Ne cherche pas dans les fichiers ou internet pour ton nom ou ton rôle.\n";
 
-        $finalSystemPrompt = $personaPrompt . $memoryString . $agentInstructions . $toolsDescription;
+        $finalSystemPrompt = $personaPrompt . $memoryString . $expertPrompt . $agentInstructions . $toolsDescription;
         
         $this->llm->setSystemPrompt($finalSystemPrompt);
         return $history;

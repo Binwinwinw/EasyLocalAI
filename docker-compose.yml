@@ -3,7 +3,7 @@ services:
     image: ollama/ollama
     container_name: ollama_upstream
     ports:
-      - "11436:11434"
+      - "11434:11434"
     volumes:
       - ${OLLAMA_MODELS_PATH:-ollama_data}:/root/.ollama
     restart: unless-stopped
@@ -56,6 +56,6 @@ services:
     deploy:
       resources:
         limits:
-          memory: 1G
+          memory: 2G
         reservations:
-          memory: 512M
+          memory: 1.5G

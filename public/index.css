@@ -17,6 +17,12 @@
     --transition-base: 0.3s cubic-bezier(0.23, 1, 0.32, 1);
     --radius-lg: 20px;
     --radius-xl: 32px;
+    
+    /* Agency-Agents Elite Tokens */
+    --magnetic-transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    --expert-bg: rgba(124, 58, 237, 0.15);
+    --expert-border: rgba(124, 58, 237, 0.4);
+    --expert-glow: 0 0 15px rgba(124, 58, 237, 0.3);
 }
 
 .light-mode {
@@ -71,6 +77,85 @@ body::after {
     0% { opacity: 0.5; box-shadow: 0 0 5px var(--primary); }
     50% { opacity: 1; box-shadow: 0 0 20px var(--primary); }
     100% { opacity: 0.5; box-shadow: 0 0 5px var(--primary); }
+}
+
+/* Vision Multi-modale
+-------------------------------------------------- */
+.chat-input-wrapper {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.image-preview-container {
+    display: flex;
+    gap: 10px;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    margin-bottom: 5px;
+    overflow-x: auto;
+    position: relative;
+}
+
+.image-preview-container:empty {
+    display: none;
+}
+
+.preview-item {
+    position: relative;
+    width: 60px;
+    height: 60px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--accent);
+    flex-shrink: 0;
+    animation: fadeIn 0.3s ease;
+}
+
+.preview-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.remove-preview {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background: rgba(255, 0, 0, 0.8);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    font-size: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+}
+
+.vision-btn {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    padding: 8px;
+    transition: color 0.3s;
+    font-size: 1.2rem;
+}
+
+.vision-btn:hover {
+    color: var(--accent);
+}
+
+.vision-btn.active {
+    color: var(--accent);
 }
 
 @keyframes fadeIn {
@@ -352,6 +437,106 @@ button:hover {
 }
 
 button:active { transform: translateY(0); }
+
+/* Expert Hub (Nexus) */
+.division-tabs {
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.division-tab {
+    background: none;
+    border: none;
+    padding: 10px 20px;
+    color: var(--text-dim);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition-base);
+    border-bottom: 2px solid transparent;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.division-tab:hover {
+    color: var(--text);
+    background: rgba(255,255,255,0.02);
+}
+
+.division-tab.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+}
+
+.expert-grid {
+    padding: 10px;
+    max-height: 400px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+}
+
+.expert-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 12px;
+    padding: 15px;
+    cursor: pointer;
+    transition: var(--transition-base);
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+    text-align: left;
+}
+
+.expert-card:hover {
+    background: rgba(255,255,255,0.05);
+    border-color: var(--primary);
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+.expert-card.active {
+    background: var(--expert-bg);
+    border-color: var(--expert-border);
+    box-shadow: var(--expert-glow);
+}
+
+.expert-card-icon {
+    width: 32px;
+    height: 32px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary);
+}
+
+.expert-card-name {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 4px;
+}
+
+.expert-card-desc {
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    line-height: 1.4;
+}
+
+/* Magnetic Hover Utility Expansion */
+.expert-card:active {
+    transform: scale(0.98);
+}
+
+/* Premium Glassmorphism Overhaul */
+.card-glass {
+    background: rgba(20, 18, 44, 0.6);
+    backdrop-filter: blur(40px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
 
 /* Thought Process Log */
 #thoughtContainer {

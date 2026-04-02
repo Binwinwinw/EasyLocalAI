@@ -5,7 +5,7 @@ require_once __DIR__ . '/../config/bootstrap.php';
 use EasyLocalAI\Core\Container;
 
 $config = Container::get('config');
-$config->set('api_base_url', 'http://localhost:11436/v1/chat/completions');
+$config->set('api_base_url', 'http://localhost:11434/v1/chat/completions');
 
 $agent = Container::get('agent');
 

@@ -12,14 +12,13 @@ class Ollama implements LlmInterface
     private string $apiKey = "";
     private string $memoryContext = "";
 
-    public function __construct(Config $config, string $memoryContext = "", string $apiKey = "")
+    public function __construct(Config $config, string $memoryContext = "", string $apiKey = "", string $ollamaHost = "http://ollama_upstream:11434")
     {
         $this->apiKey = $apiKey;
         $url = rtrim($config->get('api_base_url'), '/');
         
-        // Si l'URL contient déjà 'chat/completions', c'est probablement le Gateway
-        // On utilise l'URL interne pour l'administration (list/pull)
-        $this->ollamaBase = "http://ollama:11434";
+        // On utilise l'URL spécifiée pour l'administration (list/pull)
+        $this->ollamaBase = rtrim($ollamaHost, '/');
 
         if (strpos($url, 'chat/completions') !== false) {
             $this->baseUrl = $url;
@@ -45,9 +44,9 @@ class Ollama implements LlmInterface
     /**
      * Appelle l'API Ollama (compatible OpenAI)
      */
-    public function ask(string $prompt, array $history = []): string
+    public function ask(string $prompt, array $history = [], array $images = []): string
     {
-        $messages = $this->prepareMessages($prompt, $history);
+        $messages = $this->prepareMessages($prompt, $history, $images);
 
         $curl = curl_init();
         curl_setopt_array($curl, [
@@ -76,9 +75,9 @@ class Ollama implements LlmInterface
     /**
      * Mode Streaming réel via SSE
      */
-    public function stream(string $prompt, array $history = []): void
+    public function stream(string $prompt, array $history = [], array $images = []): void
     {
-        $messages = $this->prepareMessages($prompt, $history);
+        $messages = $this->prepareMessages($prompt, $history, $images);
 
         $curl = curl_init();
         curl_setopt_array($curl, [
@@ -178,7 +177,7 @@ class Ollama implements LlmInterface
         return $status === 200;
     }
 
-    private function prepareMessages(string $prompt, array $history): array
+    private function prepareMessages(string $prompt, array $history, array $images = []): array
     {
         $messages = [
             ["role" => "system", "content" => $this->systemPrompt . $this->memoryContext]
@@ -191,7 +190,20 @@ class Ollama implements LlmInterface
             }
         }
 
-        $messages[] = ["role" => "user", "content" => $prompt];
+        if (empty($images)) {
+            $messages[] = ["role" => "user", "content" => $prompt];
+        } else {
+            $content = [["type" => "text", "text" => $prompt]];
+            foreach ($images as $img) {
+                // $img doit être au format DataURL (data:image/jpeg;base64,...)
+                $content[] = [
+                    "type"      => "image_url",
+                    "image_url" => ["url" => $img]
+                ];
+            }
+            $messages[] = ["role" => "user", "content" => $content];
+        }
+
         return $messages;
     }
 

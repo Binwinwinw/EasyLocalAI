@@ -12,12 +12,12 @@ interface LlmInterface
     /**
      * Envoie une requête au modèle et retourne la réponse complète.
      */
-    public function ask(string $prompt, array $history = []): string;
+    public function ask(string $prompt, array $history = [], array $images = []): string;
 
     /**
      * Envoie une requête et gère le streaming de la réponse (SSE).
      */
-    public function stream(string $prompt, array $history = []): void;
+    public function stream(string $prompt, array $history = [], array $images = []): void;
 
     /**
      * Récupère le system prompt actuel.

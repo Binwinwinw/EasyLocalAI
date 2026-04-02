@@ -1,4 +1,18 @@
-## 📅 1er Avril 2026 - Archivage Intégral & Optimisation (Phase 26-28)
+## 📅 1er Avril 2026 - Synchronisation Infrastructure & Clean-up (Phase 30)
+### ✅ Harmonisation Ollama
+- **Docker** : Suppression définitive de l'instance legacy `ollama` (Port 11434 conflictuel).
+- **Code PHP** : Injection dynamique de l'URL `ollama_upstream` via le service `EnvManager`.
+- **Alignement** : L'Assistant parle désormais exclusivement au moteur multi-modal, garantissant le plein succès de la Vision.
+
+---
+
+### ✅ Éveil de la Vision
+- **Interface** : Ajout d'un sélecteur d'images cinématique et d'une preview "glassmorphism" dans le chat.
+- **Protocole** : Migration du streaming vers **POST JSON** pour supporter les payloads d'images (Base64).
+- **Moteur** : Mise à jour de l'Agent et de `Ollama.php` pour le support multi-modal (Llama 3.2 Vision, LLaVA).
+
+---
+
 ### ✅ Sécurisation Git "Béton Armé" (Phase 28)
 - **.gitignore** : Refonte complète pour exclure `vendor/`, `knowledge/*`, `gateway-config.yaml` et les métadonnées IDE.
 - **Protection des Données** : Garantie d'étanchéité totale du dépôt contre les fuites de documents RAG.
