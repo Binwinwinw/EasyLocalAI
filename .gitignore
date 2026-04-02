@@ -1,5 +1,6 @@
 # Docker & Modèles
 ollama_data/
+models/
 docker-compose.override.yml
 
 # Vendor & Dépendances
