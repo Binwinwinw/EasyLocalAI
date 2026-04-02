@@ -1,7 +1,20 @@
 {
     "app_name": "EasyLocalAI",
-    "model_name": "llama3.2",
-    "api_base_url": "http://ollama:11434/v1/chat/completions",
-    "system_prompt": "Tu es un assistant IA polyvalent et utile.",
-    "setup_completed": false
+    "model_name": "llama3.2:latest",
+    "api_base_url": "http://127.0.0.1:8003/v1/chat/completions",
+    "system_prompt": "Tu es un ingénieur logiciel senior spécialisé dans le Web. Tu fournis du code propre, sécurisé et documenté.",
+    "persona": {
+        "name": "EasyLocalAI",
+        "role": "Assistant de recherche souverain",
+        "tone": "Professionnel et concis",
+        "instructions": [
+            "Réponds toujours avec honnêteté.",
+            "Indique tes sources si possible.",
+            "Utilise le Markdown pour la clarté."
+        ]
+    },
+    "setup_completed": false,
+    "active_profile": "developer",
+    "active_provider": "ollama",
+    "admin_password": ""
 }
